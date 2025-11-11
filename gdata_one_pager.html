@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G-Data Labs - Empowering People Through AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            /* Light mode colors */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-gradient-start: #f4f1e8;
+            --bg-gradient-end: #e8e0d0;
+            --bg-card: #ffffff;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --text-header: #4a3c28;
+            --accent-primary: #8b7355;
+            --accent-secondary: #a08c69;
+            --border-color: rgba(0,0,0,0.1);
+            --shadow-color: rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-gradient-start: #2d2d2d;
+            --bg-gradient-end: #1a1a1a;
+            --bg-card: #333333;
+            --text-primary: #f0f0f0;
+            --text-secondary: #cccccc;
+            --text-header: #f0f0f0;
+            --accent-primary: #F5B11A;
+            --accent-secondary: #d4af37;
+            --border-color: rgba(255,255,255,0.1);
+            --shadow-color: rgba(0,0,0,0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            max-width: 200px;
+            height: auto;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text-header);
+            margin-bottom: 0.5rem;
+        }
+
+        .tagline {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .section {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 1.2rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px var(--shadow-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px var(--shadow-color);
+        }
+
+        h2 {
+            font-size: 1.6rem;
+            color: var(--accent-primary);
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+        }
+
+        h3 {
+            font-size: 1.3rem;
+            color: var(--text-primary);
+            margin-bottom: 0.8rem;
+            font-weight: 500;
+        }
+
+        p, li {
+            color: var(--text-secondary);
+            margin-bottom: 0.8rem;
+        }
+
+        ul {
+            padding-left: 1.5rem;
+        }
+
+        .mission-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .mission-item {
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            padding: 1rem;
+            border-radius: 15px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .mission-item h3 {
+            font-size: 1.1rem;
+        }
+        
+        .mission-item p {
+            font-size: 0.85rem;
+        }
+
+        .mission-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px var(--shadow-color);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .service-card {
+            background: var(--bg-card);
+            padding: 1rem;
+            border-radius: 15px;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .service-card h3 {
+            font-size: 1.1rem;
+        }
+        
+        .service-card p, .service-card li {
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .service-card ul {
+            padding-left: 1.2rem;
+        }
+
+        .service-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px var(--shadow-color);
+        }
+
+        .service-card i {
+            font-size: 2rem;
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .highlight {
+            color: var(--accent-primary);
+            font-weight: 500;
+        }
+
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .contact-item i {
+            color: var(--accent-primary);
+            font-size: 1.2rem;
+            width: 30px;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 50px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px var(--shadow-color);
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent-primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .section {
+                padding: 1.5rem;
+            }
+        }
+
+        /* Print styles for PDF generation */
+        @media print {
+            @page {
+                background: #f4f1e8;
+            }
+            
+            body {
+                background: linear-gradient(135deg, #f4f1e8 0%, #e8e0d0 100%) !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                color: #333 !important;
+                font-size: 11pt;
+            }
+            
+            .container {
+                max-width: 100%;
+                padding: 0;
+            }
+            
+            .theme-toggle {
+                display: none !important;
+            }
+            
+            .section {
+                page-break-inside: avoid;
+                background: rgba(255, 255, 255, 0.9) !important;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+                border: 1px solid rgba(139, 115, 85, 0.2) !important;
+                margin-bottom: 0.8rem !important;
+                padding: 1rem !important;
+            }
+            
+            /* Keep Mission and What We Do together */
+            .section:nth-of-type(1), .section:nth-of-type(2) {
+                page-break-after: avoid;
+            }
+            
+            .header {
+                padding: 0.5rem 0;
+                margin-bottom: 1rem;
+            }
+            
+            h1 {
+                font-size: 24pt;
+                color: #4a3c28 !important;
+                margin-bottom: 0.3rem;
+            }
+            
+            h2 {
+                font-size: 16pt;
+                color: #8b7355 !important;
+                margin-top: 0;
+                margin-bottom: 0.5rem;
+            }
+            
+            h3 {
+                font-size: 14pt;
+                color: #333 !important;
+            }
+            
+            .logo {
+                max-width: 180px;
+                margin-bottom: 0.5rem;
+            }
+            
+            .mission-grid {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 0.5rem !important;
+            }
+            
+            .services-grid {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 0.5rem !important;
+                page-break-inside: avoid;
+            }
+            
+            .mission-item {
+                margin-bottom: 0.5rem;
+                padding: 0.8rem !important;
+                background: rgba(248, 246, 241, 0.8) !important;
+                border: 1px solid rgba(139, 115, 85, 0.15) !important;
+                page-break-inside: avoid;
+            }
+            
+            .mission-item h3 {
+                font-size: 10pt !important;
+                margin-bottom: 0.3rem !important;
+            }
+            
+            .mission-item p {
+                font-size: 8pt !important;
+                margin-bottom: 0 !important;
+            }
+            
+            .service-card {
+                margin-bottom: 0.5rem;
+                background: rgba(255, 255, 255, 0.85) !important;
+                border: 1px solid rgba(139, 115, 85, 0.2) !important;
+                page-break-inside: avoid;
+                padding: 0.8rem !important;
+            }
+            
+            .service-card h3 {
+                font-size: 11pt !important;
+                margin-bottom: 0.3rem !important;
+            }
+            
+            .service-card p, .service-card li {
+                font-size: 8.5pt !important;
+                margin-bottom: 0.2rem !important;
+            }
+            
+            .service-card ul {
+                padding-left: 1rem !important;
+                margin: 0 !important;
+            }
+            
+            .contact-info {
+                margin-top: 0.5rem;
+            }
+            
+            /* Ensure all text is black for better print quality */
+            p, li, span {
+                color: #333 !important;
+            }
+            
+            .highlight {
+                color: #8b7355 !important;
+                font-weight: 600 !important;
+            }
+            
+            /* Remove hover effects */
+            .section:hover, .mission-item:hover, .service-card:hover {
+                transform: none !important;
+                box-shadow: none !important;
+            }
+        }
+
+        @page {
+            margin: 0.5in;
+            size: letter;
+        }
+        
+        /* Remove all headers and footers from print */
+        @page {
+            @top-left { content: none; }
+            @top-center { content: none; }
+            @top-right { content: none; }
+            @bottom-left { content: none; }
+            @bottom-center { content: none; }
+            @bottom-right { content: none; }
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <div class="container">
+        <div class="header">
+            <img src="gdata_day_trans_cropped_transparent.png" alt="G-Data Labs" class="logo">
+            <h1>G-Data Labs</h1>
+            <p class="tagline">Empowering People Through AI Research & Literacy</p>
+        </div>
+
+        <div class="section">
+            <h2>Our Mission</h2>
+            <p>G-Data Labs is committed to advancing ethical AI research and education. We empower communities through innovative AI literacy programs, cutting-edge research, and practical AI integration solutions.</p>
+            
+            <div class="mission-grid">
+                <div class="mission-item">
+                    <h3><i class="fas fa-graduation-cap"></i> Education</h3>
+                    <p>Making AI accessible and understandable for everyone through comprehensive literacy programs.</p>
+                </div>
+                <div class="mission-item">
+                    <h3><i class="fas fa-microscope"></i> Research</h3>
+                    <p>Conducting groundbreaking research in ethical AI applications and human-centered design.</p>
+                </div>
+                <div class="mission-item">
+                    <h3><i class="fas fa-handshake"></i> Community</h3>
+                    <p>Building partnerships with organizations to create positive social impact through AI.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>What We Do</h2>
+            <div class="services-grid">
+                <div class="service-card">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <h3>AI Literacy Workshops</h3>
+                    <p>Interactive workshops designed to demystify AI technology and empower participants with practical knowledge and skills.</p>
+                    <ul>
+                        <li>Hands-on AI tool training</li>
+                        <li>Ethical AI considerations</li>
+                        <li>Real-world applications</li>
+                    </ul>
+                </div>
+                
+                <div class="service-card">
+                    <i class="fas fa-code-branch"></i>
+                    <h3>AI Workflow Integration</h3>
+                    <p>Custom AI solutions seamlessly integrated into your existing workflows to enhance productivity and innovation.</p>
+                    <ul>
+                        <li>Process automation</li>
+                        <li>Custom AI model development</li>
+                        <li>Training and support</li>
+                    </ul>
+                </div>
+                
+                <div class="service-card">
+                    <i class="fas fa-search"></i>
+                    <h3>AI Research & Consulting</h3>
+                    <p>Expert consulting services to help organizations navigate the AI landscape and implement ethical AI strategies.</p>
+                    <ul>
+                        <li>AI strategy development</li>
+                        <li>Ethical AI frameworks</li>
+                        <li>Impact assessment</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Our Impact & Traction</h2>
+            <div class="mission-grid">
+                <div class="mission-item">
+                    <h3><i class="fas fa-users"></i> 200+ Students</h3>
+                    <p>We've successfully taught over 200 students, including instructors, empowering them with essential AI literacy skills.</p>
+                </div>
+                <div class="mission-item">
+                    <h3><i class="fas fa-calendar-check"></i> 10+ Sessions</h3>
+                    <p>Conducted more than 10 comprehensive AI literacy sessions across various organizations and communities.</p>
+                </div>
+                <div class="mission-item">
+                    <h3><i class="fas fa-handshake"></i> Strategic Partnerships</h3>
+                    <p>Built strong partnerships with educational institutions, community organizations, and industry leaders to expand our reach.</p>
+                </div>
+            </div>
+            
+            <h3 style="margin-top: 1.5rem; margin-bottom: 0.8rem;">Our Partners:</h3>
+            <p style="font-size: 0.9rem;">AILP3 • Georgia State University • Atlanta Public Schools • Clark Atlanta University<br>
+            Operation HOPE • CEWD • Google Cloud • GAAIM • GABTA • NVIDIA Inception Program</p>
+        </div>
+
+        <div class="section">
+            <h2>Why Choose G-Data Labs?</h2>
+            <ul>
+                <li><span class="highlight">Expertise:</span> Our team combines deep technical knowledge with a commitment to social impact</li>
+                <li><span class="highlight">Innovation:</span> We stay at the forefront of AI technology while maintaining ethical principles</li>
+                <li><span class="highlight">Community Focus:</span> Every solution is designed with people and communities in mind</li>
+                <li><span class="highlight">Proven Results:</span> Track record of successful AI implementations across diverse sectors</li>
+                <li><span class="highlight">Ongoing Support:</span> Comprehensive training and continuous support for all our solutions</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Get In Touch</h2>
+            <p>Ready to transform your organization with ethical AI? Let's start a conversation about how G-Data Labs can help you achieve your goals.</p>
+            
+            <div class="contact-info">
+                <div class="contact-item">
+                    <i class="fas fa-envelope"></i>
+                    <span>morgan.jones@g-datalabs.com</span>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-globe"></i>
+                    <span>www.g-datalabs.com</span>
+                </div>
+                <div class="contact-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Atlanta, Georgia</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            
+            const icon = document.querySelector('.theme-toggle i');
+            icon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            
+            localStorage.setItem('theme', newTheme);
+        }
+        
+        // Load saved theme preference
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.body.setAttribute('data-theme', savedTheme);
+        if (savedTheme === 'dark') {
+            document.querySelector('.theme-toggle i').className = 'fas fa-sun';
+        }
+    </script>
+</body>
+</html>

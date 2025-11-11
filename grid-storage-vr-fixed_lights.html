@@ -1,0 +1,2494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City Power Grid Energy Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            background: linear-gradient(180deg, #8fd7ff 0%, #e6f3ff 50%, #f5f7fa 100%);
+            transition: background 0.8s ease;
+        }
+
+        body.night {
+            background: radial-gradient(circle at 20% 20%, rgba(60, 90, 160, 0.45), transparent 55%), #02060f;
+        }
+
+        #canvas {
+            display: block;
+        }
+
+        .ui-panel {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+
+        .control-panel {
+            top: 20px;
+            left: 20px;
+            width: 300px;
+        }
+
+        .power-panel {
+            top: 20px;
+            right: 20px;
+            width: 350px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .status-panel {
+            bottom: 80px;
+            left: 20px;
+            width: 300px;
+        }
+
+        h3 {
+            margin-bottom: 15px;
+            color: #00ff00;
+            text-align: center;
+        }
+
+        .power-source {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .power-source:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .power-source.offline {
+            opacity: 0.5;
+            background: rgba(100, 0, 0, 0.2);
+        }
+
+        .power-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 10px;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .nuclear { background-color: #00ff00; }
+        .gas { background-color: #ff6600; }
+        .solar { background-color: #ffd700; }
+        .wind { background-color: #00bfff; }
+        .hydro { background-color: #4169e1; }
+
+        .power-bar {
+            width: 100%;
+            height: 20px;
+            background: #222;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .power-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .nuclear-fill { background: linear-gradient(90deg, #00aa00, #00ff00); }
+        .gas-fill { background: linear-gradient(90deg, #cc5200, #ff6600); }
+        .solar-fill { background: linear-gradient(90deg, #ccac00, #ffd700); }
+        .wind-fill { background: linear-gradient(90deg, #0099cc, #00bfff); }
+        .hydro-fill { background: linear-gradient(90deg, #3050a1, #4169e1); }
+
+        .power-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .power-toggle {
+            background: #00cc00;
+            color: black;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .power-toggle.off {
+            background: #cc0000;
+            color: white;
+        }
+
+        .power-slider {
+            flex: 1;
+            height: 20px;
+        }
+
+        .demand-meter {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .demand-bar {
+            width: 100%;
+            height: 30px;
+            background: #222;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            margin-top: 10px;
+        }
+
+        .demand-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ffaa00, #00ff00);
+            transition: width 0.3s ease;
+        }
+
+        .demand-marker {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: white;
+            box-shadow: 0 0 5px white;
+        }
+
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #0088ff;
+        }
+
+        /* Override width for view toggle buttons */
+        button.view-toggle {
+            width: auto;
+            margin: 0;
+            position: fixed;
+            bottom: 20px;
+            background: linear-gradient(135deg, #4A90E2, #357ABD);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 100;
+            white-space: nowrap;
+            display: inline-block;
+        }
+
+        button.view-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(135deg, #4A90E2, #357ABD);
+        }
+
+        button#uiToggle {
+            left: 20px;
+            background: linear-gradient(135deg, #666, #888);
+        }
+
+        button#uiToggle:hover {
+            background: linear-gradient(135deg, #666, #888);
+        }
+
+        button#problemBtn {
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff4400, #ff6600);
+        }
+
+        button#problemBtn:hover {
+            transform: translateX(-50%) translateY(-2px);
+            background: linear-gradient(135deg, #ff4400, #ff6600);
+        }
+
+        button#viewToggle {
+            right: 20px;
+        }
+
+        button#pauseToggle {
+            right: 20px;
+            bottom: 70px;
+            background: linear-gradient(135deg, #3ac6a6, #2aa38b);
+        }
+
+        button#pauseToggle:hover {
+            background: linear-gradient(135deg, #3ac6a6, #2aa38b);
+        }
+
+        button#dayNightToggle {
+            right: 20px;
+            bottom: 120px;
+            background: linear-gradient(135deg, #ffe066, #f7b733);
+            color: #2d2d2d;
+        }
+
+        button#dayNightToggle:hover {
+            background: linear-gradient(135deg, #ffe066, #f7b733);
+        }
+
+        .slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        .frequency {
+            font-size: 36px;
+            text-align: center;
+            padding: 20px;
+            margin: 10px 0;
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            color: #00ff00;
+        }
+
+        .frequency.warning {
+            border-color: #ffaa00;
+            color: #ffaa00;
+        }
+
+        .frequency.critical {
+            border-color: #ff0000;
+            color: #ff0000;
+        }
+
+        .blackout-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            z-index: 999;
+        }
+
+        .blackout-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #cc0000;
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            border: 3px solid #ff0000;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+        }
+
+        .blackout-message h2 {
+            margin-bottom: 20px;
+            font-size: 32px;
+        }
+
+        .blackout-message button {
+            background: white;
+            color: #cc0000;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .recovery-mode {
+            background: #ff6600 !important;
+            color: white !important;
+        }
+
+        .view-toggle {
+            position: fixed;
+            bottom: 20px;
+            background: linear-gradient(135deg, #4A90E2, #357ABD);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 100;
+            white-space: nowrap;
+            display: inline-block;
+        }
+
+        .view-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        #uiToggle {
+            left: 20px;
+            background: linear-gradient(135deg, #666, #888);
+        }
+
+        #problemBtn {
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff4400, #ff6600);
+        }
+
+        #viewToggle {
+            right: 20px;
+        }
+
+        #problemBtn:hover {
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 68, 0, 0.4);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 99;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            display: none;
+        }
+
+        /* Scrollbar styling for power panel */
+        .power-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .power-panel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .power-panel::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.7; 
+                transform: scale(1.05);
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="loading" id="loading">Loading...</div>
+
+    <div class="blackout-overlay" id="blackoutOverlay">
+        <div class="blackout-message">
+            <h2>⚡ BLACKOUT! ⚡</h2>
+            <p>Total grid failure! The city is in darkness.</p>
+            <p>Supply: <span id="blackoutSupply">0</span> MW</p>
+            <p>Demand: <span id="blackoutDemand">0</span> MW</p>
+            <p style="margin-top: 20px; font-size: 14px;">
+                Activate emergency recovery mode to restore power.<br>
+                You need to bring supply above 80% of demand.
+            </p>
+            <button id="recoveryBtn">EMERGENCY RECOVERY MODE</button>
+        </div>
+    </div>
+
+    <div class="ui-panel control-panel">
+        <h3>Grid Control</h3>
+        
+        <div class="demand-meter">
+            <div>City Demand: <span id="demandValue">1250</span> MW</div>
+            <div class="demand-bar">
+                <div class="demand-fill" id="supplyBar" style="width: 100%"></div>
+                <div class="demand-marker" id="demandMarker" style="left: 90%"></div>
+            </div>
+            <small>Green = Oversupply | Yellow = Balanced | Red = Undersupply</small>
+        </div>
+        
+        <div>
+            <label>Time: <span id="timeDisplay">12:00</span></label>
+            <input type="range" class="slider" id="timeSlider" min="0" max="24" value="12" step="0.5">
+        </div>
+        <div>
+            <label>Weather: <span id="weatherDisplay">Sunny</span></label>
+            <input type="range" class="slider" id="weatherSlider" min="0" max="3" value="1" step="1">
+        </div>
+        <button id="emergencyBtn">Emergency Load Shed (-15%)</button>
+        <button id="restartBtn" style="background: #ff6600; display: none;">Restart Grid</button>
+    </div>
+
+    <div class="ui-panel power-panel">
+        <h3>Power Sources - Click to Control</h3>
+        
+        <div class="power-source" id="nuclear-control">
+            <div class="power-header">
+                <div class="color-dot nuclear"></div>
+                <span>Nuclear: <span id="nuclearOutput">400</span> MW</span>
+            </div>
+            <div class="power-bar">
+                <div class="power-fill nuclear-fill" id="nuclearBar" style="width: 100%"></div>
+            </div>
+            <small>Fuel: <span id="nuclearFuel">100</span>%</small>
+            <div class="power-controls">
+                <button class="power-toggle" id="nuclearToggle">ON</button>
+                <input type="range" class="power-slider" id="nuclearSlider" min="0" max="100" value="100">
+                <span id="nuclearPercent">100%</span>
+            </div>
+        </div>
+
+        <div class="power-source" id="gas-control">
+            <div class="power-header">
+                <div class="color-dot gas"></div>
+                <span>Natural Gas: <span id="gasOutput">350</span> MW</span>
+            </div>
+            <div class="power-bar">
+                <div class="power-fill gas-fill" id="gasBar" style="width: 87%"></div>
+            </div>
+            <small>Fuel: <span id="gasFuel">87</span>%</small>
+            <div class="power-controls">
+                <button class="power-toggle" id="gasToggle">ON</button>
+                <input type="range" class="power-slider" id="gasSlider" min="0" max="100" value="87.5">
+                <span id="gasPercent">87%</span>
+            </div>
+        </div>
+
+        <div class="power-source" id="solar-control">
+            <div class="power-header">
+                <div class="color-dot solar"></div>
+                <span>Solar: <span id="solarOutput">280</span> MW</span>
+            </div>
+            <div class="power-bar">
+                <div class="power-fill solar-fill" id="solarBar" style="width: 93%"></div>
+            </div>
+            <div class="power-controls">
+                <button class="power-toggle" id="solarToggle">ON</button>
+                <input type="range" class="power-slider" id="solarSlider" min="0" max="100" value="93">
+                <span id="solarPercent">93%</span>
+            </div>
+        </div>
+
+        <div class="power-source" id="wind-control">
+            <div class="power-header">
+                <div class="color-dot wind"></div>
+                <span>Wind: <span id="windOutput">200</span> MW</span>
+            </div>
+            <div class="power-bar">
+                <div class="power-fill wind-fill" id="windBar" style="width: 80%"></div>
+            </div>
+            <div class="power-controls">
+                <button class="power-toggle" id="windToggle">ON</button>
+                <input type="range" class="power-slider" id="windSlider" min="0" max="100" value="80">
+                <span id="windPercent">80%</span>
+            </div>
+        </div>
+
+        <div class="power-source" id="hydro-control">
+            <div class="power-header">
+                <div class="color-dot hydro"></div>
+                <span>Hydro: <span id="hydroOutput">150</span> MW</span>
+            </div>
+            <div class="power-bar">
+                <div class="power-fill hydro-fill" id="hydroBar" style="width: 75%"></div>
+            </div>
+            <small>Water: <span id="hydroFuel">75</span>%</small>
+            <div class="power-controls">
+                <button class="power-toggle" id="hydroToggle">ON</button>
+                <input type="range" class="power-slider" id="hydroSlider" min="0" max="100" value="75">
+                <span id="hydroPercent">75%</span>
+            </div>
+        </div>
+        
+        <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 5px;">
+            <small>💡 Tips: Click plant name or 3D model to select. Adjust slider to control output. Turn off for maintenance to restore fuel.</small>
+        </div>
+    </div>
+
+    <div class="ui-panel status-panel">
+        <h3>Grid Status</h3>
+        <div class="frequency" id="frequency">60.00 Hz</div>
+        <div>Total Demand: <span id="demand">1250</span> MW</div>
+        <div>Total Supply: <span id="supply">1380</span> MW</div>
+        <div>Score: <span id="score">0</span></div>
+    </div>
+
+    <button class="view-toggle" id="uiToggle">👁️ Hide UI</button>
+    <button class="view-toggle" id="problemBtn">🚨 Problem Scenario</button>
+    <button class="view-toggle" id="viewToggle">🚁 Aerial View</button>
+    <button class="view-toggle" id="pauseToggle">⏸️ Pause</button>
+    <button class="view-toggle" id="dayNightToggle">🌙 Night Mode</button>
+    
+    <div class="controls-hint" id="controlsHint">
+        <span id="controlsText">WASD: Move | Q/E: Turn | Mouse: Look Around</span>
+    </div>
+    
+    <div id="problemAlert" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0, 0, 0, 0.95); padding: 30px; border-radius: 15px; border: 3px solid #ff4400; box-shadow: 0 10px 40px rgba(255, 68, 0, 0.5); z-index: 500; min-width: 400px; text-align: center;">
+        <h2 style="color: #ff4400; margin-bottom: 15px;">⚠️ PROBLEM SCENARIO</h2>
+        <p id="problemDescription" style="color: #ffaa00; font-size: 18px; line-height: 1.5;"></p>
+        <div style="margin-top: 20px; font-size: 14px; color: #888;">Solve quickly for bonus points!</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Global variables
+        let scene, camera, renderer;
+        let buildings = [];
+        let powerPlants = [];
+        let energyFlows = [];
+        let windTurbineBlades = [];
+        let cars = [];
+        let streetLights = [];
+        let buildingLights = [];
+        let viewMode = 'ground'; // 'ground' or 'aerial'
+        let savedGroundPosition = new THREE.Vector3(0, 50, 200);
+        let savedGroundRotation = new THREE.Euler(0, 0, 0);
+        let uiVisible = true;
+        let clock;
+        const SIMULATION_STEP = 1;
+        let simulationAccumulator = 0;
+        let isPaused = false;
+        let environmentMode = 'day';
+        let hemiLight, sunLight, moonLight;
+        let sunBillboard, moonBillboard;
+        let groundMaterial;
+        const windowColor = new THREE.Color();
+        const baseWindowColor = new THREE.Color(0xfff6a5);
+        
+        // Movement controls
+        const movement = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            turnLeft: false,
+            turnRight: false,
+            speed: 60,
+            turnSpeed: Math.PI / 2,
+            yaw: 0,
+            pitch: 0
+        };
+
+        // Power source colors
+        const colors = {
+            nuclear: 0x00ff00,
+            gas: 0xff6600,
+            solar: 0xffd700,
+            wind: 0x00bfff,
+            hydro: 0x4169e1
+        };
+
+        // Grid state
+        const grid = {
+            sources: {
+                nuclear: { output: 400, capacity: 400, fuel: 100, depletion: 0.001, online: true, outputPercent: 100 },
+                gas: { output: 350, capacity: 400, fuel: 87, depletion: 0.05, online: true, outputPercent: 87.5 },
+                solar: { output: 280, capacity: 300, fuel: 100, depletion: 0, online: true, outputPercent: 93 },
+                wind: { output: 200, capacity: 250, fuel: 100, depletion: 0, online: true, outputPercent: 80 },
+                hydro: { output: 150, capacity: 200, fuel: 75, depletion: 0.02, online: true, outputPercent: 75 }
+            },
+            demand: 1250,
+            baseDemand: 1250,
+            frequency: 60.0,
+            score: 0,
+            time: 12,
+            weather: 1,
+            selectedPlant: null,
+            blackoutActive: false,
+            blackoutRecovering: false,
+            problemActive: false,
+            problemStartTime: null,
+            problemSolved: false
+        };
+
+        // Initialize
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x8fd7ff);
+            scene.fog = new THREE.Fog(0x8fd7ff, 400, 2500);
+            clock = new THREE.Clock();
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
+            camera.position.set(0, 50, 200);
+            camera.lookAt(0, 0, 0);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.05;
+
+            // Lights
+            hemiLight = new THREE.HemisphereLight(0xcfe8ff, 0x2b3a3f, 0.9);
+            scene.add(hemiLight);
+
+            sunLight = new THREE.DirectionalLight(0xfff2d5, 1.25);
+            sunLight.position.set(250, 420, 260);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.set(2048, 2048);
+            sunLight.shadow.camera.near = 50;
+            sunLight.shadow.camera.far = 1500;
+            sunLight.shadow.camera.left = -800;
+            sunLight.shadow.camera.right = 800;
+            sunLight.shadow.camera.top = 800;
+            sunLight.shadow.camera.bottom = -800;
+            scene.add(sunLight);
+
+            moonLight = new THREE.DirectionalLight(0x8899ff, 0.35);
+            moonLight.position.set(-300, 260, -260);
+            moonLight.castShadow = false;
+            moonLight.visible = false;
+            scene.add(moonLight);
+
+            const sunMaterial = new THREE.SpriteMaterial({ color: 0xfff4c1, transparent: true, opacity: 0.85 });
+            sunBillboard = new THREE.Sprite(sunMaterial);
+            sunBillboard.scale.set(400, 400, 1);
+            sunBillboard.position.set(2000, 1600, -1200);
+            scene.add(sunBillboard);
+
+            const moonMaterial = new THREE.SpriteMaterial({ color: 0xbbe1ff, transparent: true, opacity: 0.6 });
+            moonBillboard = new THREE.Sprite(moonMaterial);
+            moonBillboard.scale.set(250, 250, 1);
+            moonBillboard.position.set(-1800, 1400, 1500);
+            moonBillboard.visible = false;
+            scene.add(moonBillboard);
+
+            // Create world
+            createGround();
+            createCity();
+            createPowerPlants();
+            createEnergyFlows();
+
+            // Setup controls
+            setupControls();
+            applyEnvironment(environmentMode);
+            
+            // Start
+            animate();
+        }
+
+        function createGround() {
+            const geometry = new THREE.PlaneGeometry(2000, 2000);
+            groundMaterial = new THREE.MeshLambertMaterial({ color: 0x3b5d42 });
+            const ground = new THREE.Mesh(geometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+        }
+
+        function createCity() {
+            // Create streets first
+            createStreets();
+
+            const windowGeometry = new THREE.PlaneGeometry(4.5, 3.2);
+            const windowMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.9,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            });
+            windowMaterial.vertexColors = true;
+            windowMaterial.needsUpdate = true;
+            
+            // Create buildings in grid with gaps for streets
+            for (let x = -5; x < 5; x++) {
+                for (let z = -5; z < 5; z++) {
+                    // Skip positions where streets are
+                    if (x === 0 || z === 0 || x === -3 || x === 3 || z === -3 || z === 3) {
+                        continue;
+                    }
+                    
+                    const height = 30 + Math.random() * 70;
+                    const buildingGroup = new THREE.Group();
+                    
+                    // Building base
+                    const geometry = new THREE.BoxGeometry(60, height, 60);
+                    const material = new THREE.MeshLambertMaterial({ 
+                        color: new THREE.Color().setHSL(0.6, 0.1, 0.3) 
+                    });
+                    
+                    const building = new THREE.Mesh(geometry, material);
+                    building.position.y = height / 2;
+                    building.castShadow = true;
+                    building.receiveShadow = true;
+                    buildingGroup.add(building);
+                    
+                    // Add windows with efficient instanced lights
+                    const windowRows = Math.max(3, Math.floor(height / 6));
+                    const windowCols = 6;
+                    const windowSpacingX = 60 / (windowCols + 1);
+                    const windowSpacingY = height / (windowRows + 1);
+                    const windowCount = windowRows * windowCols * 4;
+
+                    if (windowCount > 0) {
+                        const windowMesh = new THREE.InstancedMesh(windowGeometry, windowMaterial, windowCount);
+                        windowMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+                        const tempMatrix = new THREE.Matrix4();
+                        const tempQuaternion = new THREE.Quaternion();
+                        const tempPosition = new THREE.Vector3();
+                        const tempScale = new THREE.Vector3(1, 1, 1);
+                        let instanceIndex = 0;
+
+                        for (let row = 0; row < windowRows; row++) {
+                            const yPos = Math.min(height - 5, (row + 1) * windowSpacingY + 2);
+
+                            for (let col = 0; col < windowCols; col++) {
+                                const xOffset = (col - (windowCols - 1) / 2) * windowSpacingX;
+
+                                [-1, 1].forEach(side => {
+                                    tempPosition.set(xOffset, yPos, side * 30.5);
+                                    tempQuaternion.setFromEuler(new THREE.Euler(0, side === 1 ? Math.PI : 0, 0));
+                                    tempMatrix.compose(tempPosition, tempQuaternion, tempScale);
+                                    windowMesh.setMatrixAt(instanceIndex, tempMatrix);
+
+                                    const intensity = 0.35 + Math.random() * 0.55;
+                                    windowMesh.setColorAt(instanceIndex, windowColor.copy(baseWindowColor).multiplyScalar(intensity));
+
+                                    buildingLights.push({
+                                        mesh: windowMesh,
+                                        index: instanceIndex,
+                                        base: intensity,
+                                        flickerSpeed: 0.4 + Math.random() * 1.2,
+                                        flickerPhase: Math.random() * Math.PI * 2,
+                                        active: true,
+                                        nextToggle: 5 + Math.random() * 10
+                                    });
+
+                                    instanceIndex++;
+                                });
+
+                                [-1, 1].forEach(side => {
+                                    tempPosition.set(side * 30.5, yPos, xOffset);
+                                    tempQuaternion.setFromEuler(new THREE.Euler(0, side * Math.PI / 2, 0));
+                                    tempMatrix.compose(tempPosition, tempQuaternion, tempScale);
+                                    windowMesh.setMatrixAt(instanceIndex, tempMatrix);
+
+                                    const intensity = 0.35 + Math.random() * 0.55;
+                                    windowMesh.setColorAt(instanceIndex, windowColor.copy(baseWindowColor).multiplyScalar(intensity));
+
+                                    buildingLights.push({
+                                        mesh: windowMesh,
+                                        index: instanceIndex,
+                                        base: intensity,
+                                        flickerSpeed: 0.4 + Math.random() * 1.2,
+                                        flickerPhase: Math.random() * Math.PI * 2,
+                                        active: true,
+                                        nextToggle: 5 + Math.random() * 10
+                                    });
+
+                                    instanceIndex++;
+                                });
+                            }
+                        }
+
+                        windowMesh.instanceMatrix.needsUpdate = true;
+                        windowMesh.instanceColor.needsUpdate = true;
+                        buildingGroup.add(windowMesh);
+                    }
+                    
+                    // Add connection point
+                    const connector = new THREE.Mesh(
+                        new THREE.SphereGeometry(3),
+                        new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true })
+                    );
+                    connector.position.y = 3;
+                    buildingGroup.add(connector);
+                    
+                    buildingGroup.position.set(x * 80, 0, z * 80);
+                    buildingGroup.userData = {
+                        connector: connector,
+                        powerType: Object.keys(colors)[Math.floor(Math.random() * 5)]
+                    };
+                    
+                    buildings.push(buildingGroup);
+                    scene.add(buildingGroup);
+                }
+            }
+            
+            // Create street lights
+            createStreetLights();
+            
+            // Create cars
+            createCars();
+        }
+
+        function createStreets() {
+            const streetMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            const lineMarkingMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            
+            // Main streets (cross pattern)
+            const mainStreetPositions = [
+                { x: 0, z: 0, rotation: 0 },      // Vertical center
+                { x: 0, z: 0, rotation: Math.PI/2 }, // Horizontal center
+                { x: -240, z: 0, rotation: Math.PI/2 }, // Left horizontal
+                { x: 240, z: 0, rotation: Math.PI/2 },  // Right horizontal
+                { x: 0, z: -240, rotation: 0 },    // Top vertical
+                { x: 0, z: 240, rotation: 0 },     // Bottom vertical
+            ];
+            
+            mainStreetPositions.forEach(pos => {
+                // Street surface
+                const street = new THREE.Mesh(
+                    new THREE.PlaneGeometry(20, 600),
+                    streetMaterial
+                );
+                street.rotation.x = -Math.PI / 2;
+                street.rotation.z = pos.rotation;
+                street.position.set(pos.x, 0.1, pos.z);
+                street.receiveShadow = true;
+                scene.add(street);
+                
+                // Center line markings
+                for (let i = -300; i < 300; i += 20) {
+                    const marking = new THREE.Mesh(
+                        new THREE.PlaneGeometry(2, 10),
+                        lineMarkingMaterial
+                    );
+                    marking.rotation.x = -Math.PI / 2;
+                    marking.rotation.z = pos.rotation;
+                    
+                    if (pos.rotation === 0) {
+                        marking.position.set(pos.x, 0.15, pos.z + i);
+                    } else {
+                        marking.position.set(pos.x + i, 0.15, pos.z);
+                    }
+                    
+                    scene.add(marking);
+                }
+            });
+            
+            // Intersections
+            const intersections = [
+                { x: 0, z: 0 },
+                { x: -240, z: 0 },
+                { x: 240, z: 0 },
+                { x: 0, z: -240 },
+                { x: 0, z: 240 },
+                { x: -240, z: -240 },
+                { x: 240, z: -240 },
+                { x: -240, z: 240 },
+                { x: 240, z: 240 }
+            ];
+            
+            intersections.forEach(pos => {
+                const intersection = new THREE.Mesh(
+                    new THREE.PlaneGeometry(25, 25),
+                    streetMaterial
+                );
+                intersection.rotation.x = -Math.PI / 2;
+                intersection.position.set(pos.x, 0.1, pos.z);
+                intersection.receiveShadow = true;
+                scene.add(intersection);
+            });
+        }
+
+        function createStreetLights() {
+            const streetLightPositions = [];
+            
+            // Add lights along main streets
+            for (let i = -280; i <= 280; i += 40) {
+                // Vertical streets
+                streetLightPositions.push({ x: -10, z: i });
+                streetLightPositions.push({ x: 10, z: i });
+                streetLightPositions.push({ x: -250, z: i });
+                streetLightPositions.push({ x: 250, z: i });
+                streetLightPositions.push({ x: -230, z: i });
+                streetLightPositions.push({ x: 230, z: i });
+                
+                // Horizontal streets
+                streetLightPositions.push({ x: i, z: -10 });
+                streetLightPositions.push({ x: i, z: 10 });
+                streetLightPositions.push({ x: i, z: -250 });
+                streetLightPositions.push({ x: i, z: 250 });
+                streetLightPositions.push({ x: i, z: -230 });
+                streetLightPositions.push({ x: i, z: 230 });
+            }
+            
+            streetLightPositions.forEach(pos => {
+                const poleGeometry = new THREE.CylinderGeometry(0.3, 0.3, 12);
+                const poleMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
+                const pole = new THREE.Mesh(poleGeometry, poleMaterial);
+                pole.position.set(pos.x, 6, pos.z);
+                pole.castShadow = true;
+                scene.add(pole);
+                
+                // Light fixture
+                const fixtureGeometry = new THREE.BoxGeometry(2, 0.5, 1);
+                const fixtureMaterial = new THREE.MeshLambertMaterial({ color: 0x888888 });
+                const fixture = new THREE.Mesh(fixtureGeometry, fixtureMaterial);
+                fixture.position.set(pos.x, 12, pos.z);
+                scene.add(fixture);
+                
+                // Actual light
+                const light = new THREE.PointLight(0xffaa55, 0.5, 30);
+                light.position.set(pos.x, 11, pos.z);
+                scene.add(light);
+                
+                streetLights.push(light);
+            });
+        }
+
+        function createCars() {
+            // Create several cars on different routes
+            const carRoutes = [
+                { start: { x: -300, z: 5 }, end: { x: 300, z: 5 }, speed: 1 },
+                { start: { x: 300, z: -5 }, end: { x: -300, z: -5 }, speed: 1.2 },
+                { start: { x: 5, z: -300 }, end: { x: 5, z: 300 }, speed: 0.8 },
+                { start: { x: -5, z: 300 }, end: { x: -5, z: -300 }, speed: 1.1 },
+                { start: { x: -300, z: 245 }, end: { x: 300, z: 245 }, speed: 0.9 },
+                { start: { x: 300, z: 235 }, end: { x: -300, z: 235 }, speed: 1.3 },
+                { start: { x: 245, z: -300 }, end: { x: 245, z: 300 }, speed: 1.0 },
+                { start: { x: 235, z: 300 }, end: { x: 235, z: -300 }, speed: 0.85 }
+            ];
+            
+            carRoutes.forEach((route, index) => {
+                const carGroup = new THREE.Group();
+                
+                // Car body
+                const bodyGeometry = new THREE.BoxGeometry(8, 3, 4);
+                const bodyMaterial = new THREE.MeshLambertMaterial({ 
+                    color: new THREE.Color().setHSL(index / carRoutes.length, 0.8, 0.5) 
+                });
+                const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                body.position.y = 2;
+                carGroup.add(body);
+                
+                // Car roof
+                const roofGeometry = new THREE.BoxGeometry(5, 1.5, 3);
+                const roof = new THREE.Mesh(roofGeometry, bodyMaterial);
+                roof.position.y = 4;
+                carGroup.add(roof);
+                
+                // Headlights
+                const headlightMaterial = new THREE.MeshBasicMaterial({ 
+                    color: 0xffffaa,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                
+                const headlight1 = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.5),
+                    headlightMaterial
+                );
+                headlight1.position.set(-2, 2, 2.1);
+                carGroup.add(headlight1);
+                
+                const headlight2 = new THREE.Mesh(
+                    new THREE.CircleGeometry(0.5),
+                    headlightMaterial
+                );
+                headlight2.position.set(2, 2, 2.1);
+                carGroup.add(headlight2);
+                
+                // Position car at start
+                carGroup.position.set(route.start.x, 0, route.start.z);
+                
+                // Face the right direction
+                const direction = new THREE.Vector3(
+                    route.end.x - route.start.x,
+                    0,
+                    route.end.z - route.start.z
+                ).normalize();
+                carGroup.lookAt(
+                    carGroup.position.x + direction.x,
+                    carGroup.position.y,
+                    carGroup.position.z + direction.z
+                );
+                
+                carGroup.userData = {
+                    route: route,
+                    progress: Math.random(),
+                    headlights: [headlight1, headlight2]
+                };
+                
+                cars.push(carGroup);
+                scene.add(carGroup);
+            });
+        }
+
+        function createPowerPlants() {
+            const positions = [
+                { type: 'nuclear', pos: [-600, 0, -600] },
+                { type: 'gas', pos: [600, 0, -600] },
+                { type: 'solar', pos: [-600, 0, 600] },
+                { type: 'wind', pos: [600, 0, 600] },
+                { type: 'hydro', pos: [0, 0, -800] }
+            ];
+
+            positions.forEach(data => {
+                const plant = createDetailedPowerPlant(data.type, data.pos);
+                powerPlants.push(plant);
+                scene.add(plant);
+            });
+        }
+
+        function createDetailedPowerPlant(type, position) {
+            const group = new THREE.Group();
+            
+            switch(type) {
+                case 'nuclear':
+                    // Nuclear reactor complex
+                    const reactorDome = new THREE.Mesh(
+                        new THREE.SphereGeometry(40, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+                        new THREE.MeshLambertMaterial({ color: 0xcccccc })
+                    );
+                    reactorDome.position.y = 30;
+                    group.add(reactorDome);
+                    
+                    const reactorBase = new THREE.Mesh(
+                        new THREE.CylinderGeometry(40, 45, 30, 32),
+                        new THREE.MeshLambertMaterial({ color: 0xaaaaaa })
+                    );
+                    reactorBase.position.y = 15;
+                    group.add(reactorBase);
+                    
+                    // Cooling towers
+                    for (let i = 0; i < 2; i++) {
+                        const towerBottom = new THREE.Mesh(
+                            new THREE.CylinderGeometry(25, 30, 40, 16),
+                            new THREE.MeshLambertMaterial({ color: 0x999999 })
+                        );
+                        towerBottom.position.set(i * 80 - 40, 20, -60);
+                        group.add(towerBottom);
+                        
+                        const towerTop = new THREE.Mesh(
+                            new THREE.CylinderGeometry(20, 25, 60, 16),
+                            new THREE.MeshLambertMaterial({ color: 0xbbbbbb })
+                        );
+                        towerTop.position.set(i * 80 - 40, 70, -60);
+                        group.add(towerTop);
+                        
+                        // Steam effect
+                        const steam = new THREE.Mesh(
+                            new THREE.CylinderGeometry(15, 25, 40, 8),
+                            new THREE.MeshBasicMaterial({ 
+                                color: 0xffffff, 
+                                transparent: true, 
+                                opacity: 0.3 
+                            })
+                        );
+                        steam.position.set(i * 80 - 40, 110, -60);
+                        group.add(steam);
+                    }
+                    break;
+                    
+                case 'gas':
+                    // Industrial gas plant
+                    const mainBuilding = new THREE.Mesh(
+                        new THREE.BoxGeometry(80, 40, 60),
+                        new THREE.MeshLambertMaterial({ color: 0x666666 })
+                    );
+                    mainBuilding.position.y = 20;
+                    group.add(mainBuilding);
+                    
+                    // Smokestacks
+                    for (let i = 0; i < 3; i++) {
+                        const stack = new THREE.Mesh(
+                            new THREE.CylinderGeometry(5, 8, 80, 8),
+                            new THREE.MeshLambertMaterial({ color: 0x444444 })
+                        );
+                        stack.position.set(i * 25 - 25, 40, 0);
+                        group.add(stack);
+                        
+                        // Smoke
+                        const smoke = new THREE.Mesh(
+                            new THREE.CylinderGeometry(8, 5, 30, 8),
+                            new THREE.MeshBasicMaterial({ 
+                                color: 0x333333, 
+                                transparent: true, 
+                                opacity: 0.5 
+                            })
+                        );
+                        smoke.position.set(i * 25 - 25, 90, 0);
+                        group.add(smoke);
+                    }
+                    
+                    // Storage tanks
+                    for (let i = 0; i < 2; i++) {
+                        const tank = new THREE.Mesh(
+                            new THREE.CylinderGeometry(15, 15, 30, 16),
+                            new THREE.MeshLambertMaterial({ color: 0x888888 })
+                        );
+                        tank.position.set(50, 15, i * 30 - 15);
+                        group.add(tank);
+                    }
+                    break;
+                    
+                case 'solar':
+                    // Solar farm with panels
+                    for (let x = -4; x < 4; x++) {
+                        for (let z = -4; z < 4; z++) {
+                            const panelGroup = new THREE.Group();
+                            
+                            // Panel
+                            const panel = new THREE.Mesh(
+                                new THREE.BoxGeometry(15, 0.5, 20),
+                                new THREE.MeshLambertMaterial({ color: 0x1a1a3a })
+                            );
+                            panelGroup.add(panel);
+                            
+                            // Frame
+                            const frame = new THREE.Mesh(
+                                new THREE.BoxGeometry(16, 0.3, 21),
+                                new THREE.MeshLambertMaterial({ color: 0x666666 })
+                            );
+                            frame.position.y = -0.2;
+                            panelGroup.add(frame);
+                            
+                            // Support pole
+                            const pole = new THREE.Mesh(
+                                new THREE.CylinderGeometry(0.5, 0.5, 10),
+                                new THREE.MeshLambertMaterial({ color: 0x888888 })
+                            );
+                            pole.position.y = -5;
+                            panelGroup.add(pole);
+                            
+                            panelGroup.position.set(x * 20, 5, z * 25);
+                            panelGroup.rotation.x = -0.4; // Tilt panels
+                            group.add(panelGroup);
+                        }
+                    }
+                    
+                    // Control building
+                    const solarControl = new THREE.Mesh(
+                        new THREE.BoxGeometry(20, 15, 20),
+                        new THREE.MeshLambertMaterial({ color: 0x999999 })
+                    );
+                    solarControl.position.set(100, 7.5, 0);
+                    group.add(solarControl);
+                    break;
+                    
+                case 'wind':
+                    // Wind farm
+                    for (let x = -2; x < 3; x++) {
+                        for (let z = -2; z < 3; z++) {
+                            const turbine = createWindTurbine();
+                            turbine.position.set(x * 80, 0, z * 80);
+                            windTurbineBlades.push(turbine.userData.blades);
+                            group.add(turbine);
+                        }
+                    }
+                    break;
+                    
+                case 'hydro':
+                    // Dam structure
+                    const dam = new THREE.Mesh(
+                        new THREE.BoxGeometry(250, 80, 40),
+                        new THREE.MeshLambertMaterial({ color: 0x808080 })
+                    );
+                    dam.position.y = 40;
+                    group.add(dam);
+                    
+                    // Dam curve
+                    const damCurve = new THREE.Mesh(
+                        new THREE.CylinderGeometry(125, 125, 80, 32, 1, false, 0, Math.PI),
+                        new THREE.MeshLambertMaterial({ color: 0x909090 })
+                    );
+                    damCurve.position.set(0, 40, -20);
+                    damCurve.rotation.x = Math.PI / 2;
+                    group.add(damCurve);
+                    
+                    // Water
+                    const water = new THREE.Mesh(
+                        new THREE.PlaneGeometry(300, 150),
+                        new THREE.MeshLambertMaterial({ 
+                            color: 0x006699,
+                            transparent: true,
+                            opacity: 0.7
+                        })
+                    );
+                    water.rotation.x = -Math.PI / 2;
+                    water.position.set(0, 1, -95);
+                    group.add(water);
+                    
+                    // Power house
+                    const powerHouse = new THREE.Mesh(
+                        new THREE.BoxGeometry(60, 30, 30),
+                        new THREE.MeshLambertMaterial({ color: 0x999999 })
+                    );
+                    powerHouse.position.set(0, 15, 35);
+                    group.add(powerHouse);
+                    
+                    // Water outlets
+                    for (let i = -2; i <= 2; i++) {
+                        const outlet = new THREE.Mesh(
+                            new THREE.CylinderGeometry(3, 3, 40, 8),
+                            new THREE.MeshLambertMaterial({ color: 0x333333 })
+                        );
+                        outlet.position.set(i * 20, 20, 20);
+                        outlet.rotation.x = Math.PI / 2;
+                        group.add(outlet);
+                    }
+                    break;
+            }
+
+            // Energy orb indicator
+            const orb = new THREE.Mesh(
+                new THREE.SphereGeometry(10),
+                new THREE.MeshBasicMaterial({ 
+                    color: colors[type],
+                    transparent: true,
+                    opacity: 0.8
+                })
+            );
+            orb.position.y = 100;
+            group.add(orb);
+
+            // Light
+            const light = new THREE.PointLight(colors[type], 2, 200);
+            light.position.y = 100;
+            group.add(light);
+
+            group.position.set(position[0], position[1], position[2]);
+            group.userData = { type: type, orb: orb, light: light };
+            
+            return group;
+        }
+
+        function createWindTurbine() {
+            const turbineGroup = new THREE.Group();
+            
+            // Tower (tapered cylinder)
+            const towerGeometry = new THREE.CylinderGeometry(1.5, 3, 80, 12);
+            const towerMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            const tower = new THREE.Mesh(towerGeometry, towerMaterial);
+            tower.position.y = 40;
+            tower.castShadow = true;
+            turbineGroup.add(tower);
+            
+            // Nacelle (housing for the generator)
+            const nacelleGeometry = new THREE.BoxGeometry(8, 4, 15);
+            const nacelleMaterial = new THREE.MeshLambertMaterial({ color: 0xf0f0f0 });
+            const nacelle = new THREE.Mesh(nacelleGeometry, nacelleMaterial);
+            nacelle.position.set(0, 80, 0);
+            turbineGroup.add(nacelle);
+            
+            // Rotor hub (spinner at the center of blades)
+            const hubGeometry = new THREE.ConeGeometry(2, 4, 8);
+            const hubMaterial = new THREE.MeshLambertMaterial({ color: 0xe0e0e0 });
+            const hub = new THREE.Mesh(hubGeometry, hubMaterial);
+            hub.position.set(0, 80, 8.5);
+            hub.rotation.x = Math.PI / 2;
+            hub.castShadow = true;
+            turbineGroup.add(hub);
+            
+            // Blades - realistic aerodynamic shape
+            const bladeGroup = new THREE.Group();
+            
+            for (let i = 0; i < 3; i++) {
+                const bladeShape = new THREE.Shape();
+                
+                // Create airfoil-like blade profile
+                bladeShape.moveTo(0, 0);
+                bladeShape.lineTo(1.5, 0.2);
+                bladeShape.quadraticCurveTo(2, 0.3, 2, 20);
+                bladeShape.quadraticCurveTo(2, 35, 1, 40);
+                bladeShape.quadraticCurveTo(0.5, 42, 0, 43);
+                bladeShape.quadraticCurveTo(-0.5, 42, -1, 40);
+                bladeShape.quadraticCurveTo(-2, 35, -2, 20);
+                bladeShape.quadraticCurveTo(-2, 0.3, -1.5, 0.2);
+                bladeShape.lineTo(0, 0);
+                
+                const extrudeSettings = {
+                    depth: 0.3,
+                    bevelEnabled: true,
+                    bevelThickness: 0.1,
+                    bevelSize: 0.1,
+                    bevelSegments: 1
+                };
+                
+                const bladeGeometry = new THREE.ExtrudeGeometry(bladeShape, extrudeSettings);
+                const bladeMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+                const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
+                
+                // Position and rotate each blade
+                blade.rotation.z = (i * Math.PI * 2) / 3;
+                blade.rotation.x = 0.1; // Slight pitch angle
+                blade.castShadow = true;
+                
+                bladeGroup.add(blade);
+            }
+            
+            // Position blade group at the front of nacelle
+            bladeGroup.position.set(0, 80, 7.5);
+            turbineGroup.add(bladeGroup);
+            
+            turbineGroup.userData = { blades: bladeGroup };
+            return turbineGroup;
+        }
+
+        function createEnergyFlows() {
+            // Connect each building to nearest power plant of its type
+            buildings.forEach(building => {
+                const plantType = building.userData.powerType;
+                const plant = powerPlants.find(p => p.userData.type === plantType);
+                
+                if (plant) {
+                    const startPos = new THREE.Vector3();
+                    plant.getWorldPosition(startPos);
+                    startPos.y = 80;
+                    
+                    const endPos = new THREE.Vector3();
+                    building.getWorldPosition(endPos);
+                    endPos.y = 5;
+                    
+                    // Create curve
+                    const midPos = new THREE.Vector3(
+                        (startPos.x + endPos.x) / 2,
+                        Math.max(startPos.y, endPos.y) + 50,
+                        (startPos.z + endPos.z) / 2
+                    );
+                    
+                    const curve = new THREE.QuadraticBezierCurve3(startPos, midPos, endPos);
+                    const points = curve.getPoints(50);
+                    const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                    
+                    const material = new THREE.LineBasicMaterial({
+                        color: colors[plantType],
+                        transparent: true,
+                        opacity: 0.6
+                    });
+                    
+                    const line = new THREE.Line(geometry, material);
+                    line.userData = {
+                        plant: plant,
+                        building: building,
+                        type: plantType,
+                        curve: curve,
+                        particles: []
+                    };
+                    
+                    // Add flow particles
+                    for (let i = 0; i < 3; i++) {
+                        const particle = new THREE.Mesh(
+                            new THREE.SphereGeometry(2),
+                            new THREE.MeshBasicMaterial({ 
+                                color: colors[plantType],
+                                transparent: true,
+                                opacity: 0.8
+                            })
+                        );
+                        particle.userData = { t: i / 3 };
+                        line.userData.particles.push(particle);
+                        scene.add(particle);
+                    }
+                    
+                    energyFlows.push(line);
+                    scene.add(line);
+                }
+            });
+        }
+
+        function applyEnvironment(mode) {
+            environmentMode = mode;
+            if (!scene || !renderer) return;
+
+            const isNight = mode === 'night';
+            document.body.classList.toggle('night', isNight);
+
+            if (scene.fog) {
+                if (isNight) {
+                    scene.fog.color.set(0x040618);
+                    scene.fog.near = 250;
+                    scene.fog.far = 1800;
+                    scene.background.set(0x040618);
+                } else {
+                    scene.fog.color.set(0x8fd7ff);
+                    scene.fog.near = 400;
+                    scene.fog.far = 2500;
+                    scene.background.set(0x8fd7ff);
+                }
+            }
+
+            if (hemiLight) {
+                if (isNight) {
+                    hemiLight.intensity = 0.45;
+                    hemiLight.color.set(0x6f7fb2);
+                    hemiLight.groundColor.set(0x0b0f1a);
+                } else {
+                    hemiLight.intensity = 1.05;
+                    hemiLight.color.set(0xcfe8ff);
+                    hemiLight.groundColor.set(0x2b3a3f);
+                }
+            }
+
+            if (sunLight && moonLight) {
+                sunLight.visible = !isNight;
+                sunLight.intensity = isNight ? 0 : 1.25;
+                moonLight.visible = isNight;
+                moonLight.intensity = isNight ? 0.45 : 0;
+            }
+
+            if (sunBillboard && moonBillboard) {
+                sunBillboard.visible = !isNight;
+                moonBillboard.visible = isNight;
+                sunBillboard.material.opacity = isNight ? 0 : 0.85;
+                moonBillboard.material.opacity = isNight ? 0.6 : 0;
+            }
+
+            if (groundMaterial) {
+                groundMaterial.color.set(isNight ? 0x1a2532 : 0x3b5d42);
+            }
+
+            renderer.toneMappingExposure = isNight ? 0.9 : 1.05;
+
+            const dayNightBtn = document.getElementById('dayNightToggle');
+            if (dayNightBtn) {
+                dayNightBtn.textContent = isNight ? '🌞 Day Mode' : '🌙 Night Mode';
+            }
+        }
+
+        function setupControls() {
+            // WASD Movement controls
+            document.addEventListener('keydown', e => {
+                switch(e.key.toLowerCase()) {
+                    case 'w': movement.forward = true; break;
+                    case 'a': movement.left = true; break;
+                    case 's': movement.backward = true; break;
+                    case 'd': movement.right = true; break;
+                    case 'q': movement.turnLeft = true; break;
+                    case 'e': movement.turnRight = true; break;
+                }
+            });
+
+            document.addEventListener('keyup', e => {
+                switch(e.key.toLowerCase()) {
+                    case 'w': movement.forward = false; break;
+                    case 'a': movement.left = false; break;
+                    case 's': movement.backward = false; break;
+                    case 'd': movement.right = false; break;
+                    case 'q': movement.turnLeft = false; break;
+                    case 'e': movement.turnRight = false; break;
+                }
+            });
+
+            // Mouse controls for camera look
+            let mouseDown = false;
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousedown', e => {
+                if (e.target.tagName === 'CANVAS') {
+                    mouseDown = true;
+                    mouseX = e.clientX;
+                    mouseY = e.clientY;
+                }
+            });
+
+            document.addEventListener('mouseup', () => mouseDown = false);
+
+            document.addEventListener('mousemove', e => {
+                if (!mouseDown) return;
+                
+                const deltaX = e.clientX - mouseX;
+                const deltaY = e.clientY - mouseY;
+                
+                if (viewMode === 'ground') {
+                    movement.yaw -= deltaX * 0.005;
+                    movement.pitch -= deltaY * 0.005;
+                    movement.pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, movement.pitch));
+                } else {
+                    // Aerial view - orbit controls
+                    const spherical = new THREE.Spherical();
+                    spherical.setFromVector3(camera.position);
+                    spherical.theta -= deltaX * 0.01;
+                    spherical.phi += deltaY * 0.01;
+                    spherical.phi = Math.max(0.1, Math.min(Math.PI - 0.1, spherical.phi));
+                    camera.position.setFromSpherical(spherical);
+                    camera.lookAt(0, 0, 0);
+                }
+                
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+
+            const forward = new THREE.Vector3();
+            const right = new THREE.Vector3();
+            const up = new THREE.Vector3(0, 1, 0);
+
+            // Update camera position and rotation
+            function updateMovement(delta) {
+                if (viewMode !== 'ground') return;
+                
+                const moveStep = movement.speed * delta;
+                const turnStep = movement.turnSpeed * delta;
+                
+                // Get camera direction
+                camera.getWorldDirection(forward);
+                forward.y = 0;
+                forward.normalize();
+                
+                // Get right vector
+                right.crossVectors(up, forward);
+                
+                // Apply movement
+                if (movement.forward) {
+                    camera.position.addScaledVector(forward, moveStep);
+                }
+                if (movement.backward) {
+                    camera.position.addScaledVector(forward, -moveStep);
+                }
+                if (movement.left) {
+                    camera.position.addScaledVector(right, -moveStep);
+                }
+                if (movement.right) {
+                    camera.position.addScaledVector(right, moveStep);
+                }
+                
+                // Apply rotation
+                if (movement.turnLeft) {
+                    movement.yaw += turnStep;
+                }
+                if (movement.turnRight) {
+                    movement.yaw -= turnStep;
+                }
+                
+                // Update camera rotation
+                camera.rotation.set(movement.pitch, movement.yaw, 0, 'YXZ');
+                
+                // Keep camera above ground
+                camera.position.y = Math.max(10, camera.position.y);
+            }
+
+            // Store update function for animation loop
+            window.updateMovement = updateMovement;
+
+            // Click on 3D plants
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+
+            document.getElementById('canvas').addEventListener('click', e => {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(powerPlants, true);
+                
+                if (intersects.length > 0) {
+                    const plant = intersects[0].object.parent;
+                    if (plant.userData && plant.userData.type) {
+                        selectPlant(plant.userData.type);
+                    }
+                }
+            });
+
+            // Power source controls
+            ['nuclear', 'gas', 'solar', 'wind', 'hydro'].forEach(type => {
+                // Click on panel
+                document.getElementById(type + '-control').addEventListener('click', () => {
+                    selectPlant(type);
+                });
+
+                // Toggle button
+                const toggle = document.getElementById(type + 'Toggle');
+                toggle.addEventListener('click', e => {
+                    e.stopPropagation();
+                    const source = grid.sources[type];
+                    source.online = !source.online;
+                    toggle.textContent = source.online ? 'ON' : 'OFF';
+                    toggle.className = source.online ? 'power-toggle' : 'power-toggle off';
+                    document.getElementById(type + '-control').className = 
+                        source.online ? 'power-source' : 'power-source offline';
+                    
+                    if (!source.online) {
+                        source.output = 0;
+                    } else {
+                        // Immediately update output when turning on
+                        updateSourceOutput(type);
+                    }
+                    
+                    // Force UI update
+                    const totalSupply = Object.values(grid.sources).reduce((sum, s) => sum + s.output, 0);
+                    updateUI(totalSupply);
+                });
+
+                // Output slider
+                const slider = document.getElementById(type + 'Slider');
+                slider.addEventListener('input', e => {
+                    e.stopPropagation();
+                    const percent = parseFloat(e.target.value);
+                    grid.sources[type].outputPercent = percent;
+                    document.getElementById(type + 'Percent').textContent = Math.round(percent) + '%';
+                    
+                    if (grid.sources[type].online) {
+                        updateSourceOutput(type);
+                        // Force UI update
+                        const totalSupply = Object.values(grid.sources).reduce((sum, s) => sum + s.output, 0);
+                        updateUI(totalSupply);
+                    }
+                });
+            });
+
+            // Time slider
+            document.getElementById('timeSlider').addEventListener('input', e => {
+                grid.time = parseFloat(e.target.value);
+                const hours = Math.floor(grid.time);
+                const mins = Math.floor((grid.time - hours) * 60);
+                document.getElementById('timeDisplay').textContent = 
+                    `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+                updateTimeBasedFactors();
+            });
+
+            // Weather slider
+            document.getElementById('weatherSlider').addEventListener('input', e => {
+                grid.weather = parseInt(e.target.value);
+                const weathers = ['Storm', 'Sunny', 'Cloudy', 'Drought'];
+                document.getElementById('weatherDisplay').textContent = weathers[grid.weather];
+                updateWeather();
+            });
+
+            // Emergency button
+            document.getElementById('emergencyBtn').addEventListener('click', () => {
+                grid.demand *= 0.85;
+                grid.score -= 500;
+                setTimeout(() => {
+                    grid.demand = grid.baseDemand * getDemandMultiplier();
+                }, 30000); // Restore after 30 seconds
+            });
+
+            // Recovery button (in blackout overlay)
+            document.getElementById('recoveryBtn').addEventListener('click', () => {
+                enterRecoveryMode();
+            });
+
+            // Restart button
+            document.getElementById('restartBtn').addEventListener('click', () => {
+                attemptGridRestart();
+            });
+
+            // Problem scenario button
+            document.getElementById('problemBtn').addEventListener('click', () => {
+                createProblemScenario();
+            });
+
+            // View toggle button
+            document.getElementById('viewToggle').addEventListener('click', () => {
+                toggleView();
+            });
+
+            // Day/Night toggle
+            document.getElementById('dayNightToggle').addEventListener('click', () => {
+                const nextMode = environmentMode === 'day' ? 'night' : 'day';
+                applyEnvironment(nextMode);
+                document.getElementById('dayNightToggle').textContent = nextMode === 'day' ? '🌙 Night Mode' : '🌞 Day Mode';
+            });
+
+            // Pause toggle
+            document.getElementById('pauseToggle').addEventListener('click', () => {
+                isPaused = !isPaused;
+                document.getElementById('pauseToggle').textContent = isPaused ? '▶️ Resume' : '⏸️ Pause';
+            });
+
+            // UI toggle button
+            document.getElementById('uiToggle').addEventListener('click', () => {
+                toggleUI();
+            });
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        function selectPlant(type) {
+            grid.selectedPlant = type;
+            
+            // Update 3D visualization
+            powerPlants.forEach(plant => {
+                if (plant.userData.type === type) {
+                    plant.scale.set(1.2, 1.2, 1.2);
+                } else {
+                    plant.scale.set(1, 1, 1);
+                }
+            });
+
+            // Highlight UI panel
+            ['nuclear', 'gas', 'solar', 'wind', 'hydro'].forEach(t => {
+                const panel = document.getElementById(t + '-control');
+                panel.style.border = t === type ? '2px solid white' : 'none';
+            });
+        }
+
+        function updateSourceOutput(type) {
+            const source = grid.sources[type];
+            if (!source.online) {
+                source.output = 0;
+                return;
+            }
+
+            const baseOutput = source.capacity * (source.outputPercent / 100);
+            
+            // Apply modifiers
+            switch(type) {
+                case 'solar':
+                    const daylight = grid.time >= 6 && grid.time <= 18;
+                    const solarFactor = daylight ? Math.sin((grid.time - 6) * Math.PI / 12) : 0;
+                    source.output = baseOutput * solarFactor * getWeatherSolarModifier();
+                    break;
+                case 'wind':
+                    source.output = baseOutput * getWeatherWindModifier();
+                    break;
+                case 'hydro':
+                    source.output = baseOutput * (source.fuel / 100);
+                    break;
+                case 'nuclear':
+                case 'gas':
+                    // These sources output based on fuel availability
+                    source.output = source.fuel > 0 ? baseOutput : 0;
+                    break;
+                default:
+                    source.output = baseOutput * (source.fuel > 0 ? 1 : 0);
+            }
+            
+            // Update restart button state during recovery
+            if (grid.blackoutRecovering) {
+                const totalSupply = Object.values(grid.sources).reduce((sum, s) => sum + s.output, 0);
+                const requiredSupply = grid.demand * 0.9;
+                
+                if (totalSupply >= requiredSupply) {
+                    document.getElementById('restartBtn').style.display = 'block';
+                    document.getElementById('restartBtn').className = '';
+                    document.getElementById('restartBtn').style.background = '#00cc00';
+                    document.getElementById('restartBtn').textContent = '✅ Restart Grid (Supply Sufficient)';
+                } else {
+                    document.getElementById('restartBtn').textContent = `⚠️ Need ${Math.round(requiredSupply - totalSupply)} MW more`;
+                }
+            }
+        }
+
+        function updateTimeBasedFactors() {
+            // Update solar
+            updateSourceOutput('solar');
+            
+            // Update demand based on time
+            const hour = Math.floor(grid.time);
+            const demandCurve = [
+                0.7, 0.65, 0.6, 0.6, 0.65, 0.7,   // 0-5
+                0.8, 0.9, 1.0, 1.05, 1.1, 1.1,    // 6-11
+                1.05, 1.0, 1.0, 1.05, 1.1, 1.2,   // 12-17
+                1.15, 1.1, 1.0, 0.9, 0.8, 0.75    // 18-23
+            ];
+            grid.demand = grid.baseDemand * demandCurve[hour];
+            document.getElementById('demandValue').textContent = Math.round(grid.demand);
+        }
+
+        function getDemandMultiplier() {
+            const hour = Math.floor(grid.time);
+            const demandCurve = [
+                0.7, 0.65, 0.6, 0.6, 0.65, 0.7,
+                0.8, 0.9, 1.0, 1.05, 1.1, 1.1,
+                1.05, 1.0, 1.0, 1.05, 1.1, 1.2,
+                1.15, 1.1, 1.0, 0.9, 0.8, 0.75
+            ];
+            return demandCurve[hour];
+        }
+
+        function getWeatherSolarModifier() {
+            switch(grid.weather) {
+                case 0: return 0.2;  // Storm
+                case 1: return 1.0;  // Sunny
+                case 2: return 0.6;  // Cloudy
+                case 3: return 0.9;  // Drought
+                default: return 1.0;
+            }
+        }
+
+        function getWeatherWindModifier() {
+            switch(grid.weather) {
+                case 0: return 1.5;  // Storm
+                case 1: return 0.8;  // Sunny
+                case 2: return 1.1;  // Cloudy
+                case 3: return 0.7;  // Drought
+                default: return 1.0;
+            }
+        }
+
+        function updateWeather() {
+            // Update wind and solar based on weather
+            updateSourceOutput('solar');
+            updateSourceOutput('wind');
+            
+            // Drought affects hydro
+            if (grid.weather === 3) {
+                grid.sources.hydro.fuel = Math.max(0, grid.sources.hydro.fuel - 5);
+            }
+        }
+
+        function updateSimulation(deltaSeconds = 1) {
+            // Skip normal simulation during blackout
+            if (grid.blackoutActive && !grid.blackoutRecovering) {
+                return;
+            }
+
+            // Deplete fuel for online sources
+            Object.entries(grid.sources).forEach(([type, source]) => {
+                if (source.online && source.depletion > 0 && source.output > 0) {
+                    source.fuel -= source.depletion * (source.output / source.capacity) * deltaSeconds;
+                    source.fuel = Math.max(0, source.fuel);
+                    
+                    if (source.fuel === 0) {
+                        source.output = 0;
+                        source.online = false;
+                        document.getElementById(type + 'Toggle').click(); // Auto shut off
+                    }
+                } else if (!source.online && source.fuel < 100) {
+                    // Replenish fuel during maintenance (offline)
+                    const replenishRate = grid.blackoutRecovering ? 2.0 : 0.5; // Faster during recovery
+                    source.fuel += replenishRate * deltaSeconds;
+                    source.fuel = Math.min(100, source.fuel);
+                }
+            });
+
+            // Calculate totals
+            const totalSupply = Object.values(grid.sources).reduce((sum, s) => sum + s.output, 0);
+            const balance = (totalSupply - grid.demand) / grid.demand;
+            
+            // Update frequency
+            grid.frequency = 60 + balance * 2;
+            grid.frequency = Math.max(58, Math.min(62, grid.frequency));
+            
+            // Score calculation
+            if (!grid.blackoutActive) {
+                if (Math.abs(grid.frequency - 60) < 0.1) {
+                    grid.score += 20 * deltaSeconds; // Perfect balance bonus
+                } else if (Math.abs(grid.frequency - 60) < 0.2) {
+                    grid.score += 10 * deltaSeconds;
+                } else if (Math.abs(grid.frequency - 60) > 1) {
+                    grid.score -= 50 * deltaSeconds;
+                }
+            }
+
+            // Blackout check
+            if (!grid.blackoutActive && !grid.blackoutRecovering && totalSupply < grid.demand * 0.8) {
+                triggerBlackout();
+            }
+
+            // Recovery check
+            if (grid.blackoutRecovering && totalSupply >= grid.demand * 0.9) {
+                document.getElementById('restartBtn').style.display = 'block';
+                document.getElementById('restartBtn').textContent = 'Restart Grid (Supply Sufficient)';
+            }
+
+            // Update UI
+            updateUI(totalSupply);
+        }
+
+        function triggerBlackout() {
+            grid.blackoutActive = true;
+            grid.score -= 1000;
+            
+            // Show blackout overlay
+            document.getElementById('blackoutOverlay').style.display = 'block';
+            
+            // Update blackout info
+            const totalSupply = Object.values(grid.sources).reduce((sum, s) => sum + s.output, 0);
+            document.getElementById('blackoutSupply').textContent = Math.round(totalSupply);
+            document.getElementById('blackoutDemand').textContent = Math.round(grid.demand);
+            
+            // Shut down all power automatically
+            Object.keys(grid.sources).forEach(type => {
+                grid.sources[type].online = false;
+                grid.sources[type].output = 0;
+            });
+            
+            // Visual effects
+            scene.background = new THREE.Color(0x000000);
+            scene.fog = new THREE.Fog(0x000000, 100, 2000);
+        }
+
+        function enterRecoveryMode() {
+            grid.blackoutRecovering = true;
+            grid.blackoutActive = false;
+            
+            // Hide overlay
+            document.getElementById('blackoutOverlay').style.display = 'none';
+            
+            // Reduce demand temporarily for recovery
+            grid.demand = grid.baseDemand * 0.5; // 50% demand during recovery
+            
+            // Show restart button
+            document.getElementById('restartBtn').style.display = 'block';
+            document.getElementById('restartBtn').className = 'recovery-mode';
+            document.getElementById('restartBtn').textContent = 'Restart Grid When Ready';
+            
+            // Update all UI to show recovery mode
+            document.querySelector('.control-panel h3').textContent = 'Grid Control - RECOVERY MODE';
+            document.querySelector('.control-panel').style.border = '2px solid #ff6600';
+            
+            // Restore partial lighting
+            scene.background = new THREE.Color(0x110000);
+            scene.fog = new THREE.Fog(0x110000, 100, 2000);
+        }
+
+        function attemptGridRestart() {
+            const totalSupply = Object.values(grid.sources).reduce((sum, s) => sum + s.output, 0);
+            const requiredSupply = grid.demand * 0.9; // 90% of current (reduced) demand
+            
+            console.log('Attempting restart - Supply:', totalSupply, 'Required:', requiredSupply, 'Demand:', grid.demand);
+            
+            if (totalSupply >= requiredSupply) {
+                // Successful restart
+                grid.blackoutRecovering = false;
+                grid.blackoutActive = false;
+                
+                // Restore normal demand gradually
+                let demandRestoreSteps = 0;
+                const restoreInterval = setInterval(() => {
+                    demandRestoreSteps++;
+                    grid.demand = grid.baseDemand * (0.5 + (0.5 * demandRestoreSteps / 10));
+                    
+                    if (demandRestoreSteps >= 10) {
+                        clearInterval(restoreInterval);
+                        grid.demand = grid.baseDemand * getDemandMultiplier();
+                    }
+                }, 1000);
+                
+                // Restore UI
+                document.getElementById('restartBtn').style.display = 'none';
+                document.querySelector('.control-panel h3').textContent = 'Grid Control';
+                document.querySelector('.control-panel').style.border = '1px solid #333';
+                
+                // Restore normal lighting based on current environment
+                applyEnvironment(environmentMode);
+                
+                // Bonus for successful recovery
+                grid.score += 500;
+                
+                alert('✅ Grid successfully restored! +500 points for recovery!');
+            } else {
+                alert(`⚠️ Insufficient power! 
+Current supply: ${Math.round(totalSupply)} MW
+Required: ${Math.round(requiredSupply)} MW (90% of ${Math.round(grid.demand)} MW)
+                
+Turn on more power sources or increase their output!`);
+            }
+        }
+
+        function updateUI(totalSupply) {
+            // Frequency
+            const freqEl = document.getElementById('frequency');
+            freqEl.textContent = grid.frequency.toFixed(2) + ' Hz';
+            freqEl.className = 'frequency';
+            if (Math.abs(grid.frequency - 60) > 0.5) freqEl.className += ' warning';
+            if (Math.abs(grid.frequency - 60) > 1) freqEl.className += ' critical';
+
+            // Supply/Demand bar
+            const supplyPercent = Math.min(100, (totalSupply / grid.demand) * 100);
+            document.getElementById('supplyBar').style.width = supplyPercent + '%';
+            document.getElementById('demandMarker').style.left = '100%';
+
+            // Totals
+            document.getElementById('demand').textContent = Math.round(grid.demand);
+            document.getElementById('supply').textContent = Math.round(totalSupply);
+            document.getElementById('score').textContent = grid.score;
+
+            // Sources
+            Object.entries(grid.sources).forEach(([type, source]) => {
+                const output = document.getElementById(type + 'Output');
+                const bar = document.getElementById(type + 'Bar');
+                const fuel = document.getElementById(type + 'Fuel');
+                
+                if (output) output.textContent = Math.round(source.output);
+                if (bar) {
+                    const barWidth = source.fuel || 100;
+                    bar.style.width = barWidth + '%';
+                    
+                    // Color code fuel levels
+                    if (source.fuel < 20) {
+                        bar.style.background = 'linear-gradient(90deg, #cc0000, #ff3333)';
+                    } else if (source.fuel < 50) {
+                        bar.style.background = 'linear-gradient(90deg, #cc6600, #ff9900)';
+                    }
+                }
+                if (fuel) fuel.textContent = Math.round(source.fuel || 100);
+                
+                // Update control state
+                const control = document.getElementById(type + '-control');
+                if (control) {
+                    control.className = source.online ? 'power-source' : 'power-source offline';
+                }
+            });
+        }
+
+        function createProblemScenario() {
+            if (grid.problemActive) {
+                alert('A problem scenario is already active! Solve it first.');
+                return;
+            }
+
+            const scenarios = [
+                {
+                    name: "Sudden Demand Spike",
+                    description: "A heatwave has hit the city! Air conditioning usage has caused demand to spike by 30%. Balance the grid!",
+                    effect: () => {
+                        grid.demand = grid.baseDemand * 1.3 * getDemandMultiplier();
+                        document.getElementById('demandValue').textContent = Math.round(grid.demand);
+                    },
+                    checkSolution: () => {
+                        const totalSupply = Object.values(grid.sources).reduce((sum, s) => sum + s.output, 0);
+                        return Math.abs(grid.frequency - 60) < 0.3;
+                    }
+                },
+                {
+                    name: "Gas Plant Failure",
+                    description: "The gas plant has suffered a mechanical failure and shut down! Find alternative power sources to meet demand.",
+                    effect: () => {
+                        grid.sources.gas.online = false;
+                        grid.sources.gas.output = 0;
+                        grid.sources.gas.fuel = 0;
+                        document.getElementById('gasToggle').click();
+                    },
+                    checkSolution: () => {
+                        const totalSupply = Object.values(grid.sources).reduce((sum, s) => sum + s.output, 0);
+                        return totalSupply >= grid.demand * 0.95 && !grid.sources.gas.online;
+                    }
+                },
+                {
+                    name: "Storm Approaching",
+                    description: "A severe storm is approaching! Solar output will drop to 20% and wind will surge to 150%. Prepare the grid!",
+                    effect: () => {
+                        grid.weather = 0; // Storm
+                        document.getElementById('weatherSlider').value = 0;
+                        document.getElementById('weatherDisplay').textContent = 'Storm';
+                        updateWeather();
+                    },
+                    checkSolution: () => {
+                        return Math.abs(grid.frequency - 60) < 0.5;
+                    }
+                },
+                {
+                    name: "Nuclear Maintenance",
+                    description: "Nuclear plant requires emergency maintenance. You must shut it down and compensate with other sources!",
+                    effect: () => {
+                        alert('⚠️ Nuclear plant requires immediate shutdown for safety inspection!');
+                    },
+                    checkSolution: () => {
+                        const totalSupply = Object.values(grid.sources).reduce((sum, s) => sum + s.output, 0);
+                        return !grid.sources.nuclear.online && totalSupply >= grid.demand * 0.9;
+                    }
+                },
+                {
+                    name: "Peak Evening Demand",
+                    description: "It's evening peak hours! Demand is surging as solar output drops to zero. Balance the grid!",
+                    effect: () => {
+                        grid.time = 19;
+                        document.getElementById('timeSlider').value = 19;
+                        document.getElementById('timeDisplay').textContent = '19:00';
+                        updateTimeBasedFactors();
+                        grid.demand = grid.baseDemand * 1.2;
+                    },
+                    checkSolution: () => {
+                        const totalSupply = Object.values(grid.sources).reduce((sum, s) => sum + s.output, 0);
+                        return totalSupply >= grid.demand * 0.95;
+                    }
+                },
+                {
+                    name: "Hydro Drought",
+                    description: "Severe drought has reduced hydro capacity to 30%! Manage remaining water carefully while meeting demand.",
+                    effect: () => {
+                        grid.sources.hydro.fuel = 30;
+                        grid.weather = 3; // Drought
+                        document.getElementById('weatherSlider').value = 3;
+                        document.getElementById('weatherDisplay').textContent = 'Drought';
+                        updateWeather();
+                    },
+                    checkSolution: () => {
+                        return Math.abs(grid.frequency - 60) < 0.4;
+                    }
+                }
+            ];
+
+            // Select random scenario
+            const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+            
+            // Apply scenario
+            grid.problemActive = true;
+            grid.problemStartTime = Date.now();
+            grid.problemSolved = false;
+            grid.currentScenario = scenario;
+
+            // Show alert
+            const alertDiv = document.getElementById('problemAlert');
+            const descDiv = document.getElementById('problemDescription');
+            alertDiv.style.display = 'block';
+            descDiv.textContent = scenario.description;
+
+            // Apply the scenario effect
+            scenario.effect();
+
+            // Flash the problem button
+            const btn = document.getElementById('problemBtn');
+            btn.style.animation = 'pulse 2s infinite';
+            btn.textContent = '⏰ Problem Active!';
+
+            // Check for solution every second
+            const checkInterval = setInterval(() => {
+                if (scenario.checkSolution()) {
+                    clearInterval(checkInterval);
+                    solveProblemScenario();
+                }
+                
+                // Timeout after 5 minutes
+                if (Date.now() - grid.problemStartTime > 300000) {
+                    clearInterval(checkInterval);
+                    failProblemScenario();
+                }
+            }, 1000);
+        }
+
+        function solveProblemScenario() {
+            grid.problemActive = false;
+            grid.problemSolved = true;
+            
+            const timeTaken = Math.floor((Date.now() - grid.problemStartTime) / 1000);
+            const bonus = Math.max(100, 1000 - timeTaken * 5); // More points for faster solution
+            
+            grid.score += bonus;
+            
+            alert(`✅ Problem Solved!\n\nTime taken: ${timeTaken} seconds\nBonus points: +${bonus}`);
+            
+            // Reset UI
+            const btn = document.getElementById('problemBtn');
+            btn.style.animation = '';
+            btn.textContent = '🚨 Create Problem Scenario';
+            document.getElementById('problemAlert').style.display = 'none';
+        }
+
+        function failProblemScenario() {
+            grid.problemActive = false;
+            grid.score -= 200;
+            
+            alert(`❌ Problem Failed!\n\nYou took too long to solve the problem.\nPenalty: -200 points`);
+            
+            // Reset UI
+            const btn = document.getElementById('problemBtn');
+            btn.style.animation = '';
+            btn.textContent = '🚨 Create Problem Scenario';
+            document.getElementById('problemAlert').style.display = 'none';
+        }
+
+        function toggleView() {
+            const button = document.getElementById('viewToggle');
+            const hint = document.getElementById('controlsHint');
+            const controlsText = document.getElementById('controlsText');
+            
+            if (viewMode === 'ground') {
+                // Switch to aerial view
+                viewMode = 'aerial';
+                button.textContent = '🚶 Ground View';
+                controlsText.textContent = 'Mouse: Drag to orbit | Scroll: Zoom';
+                
+                // Save current ground position
+                savedGroundPosition.copy(camera.position);
+                savedGroundRotation.copy(camera.rotation);
+                
+                // Animate to aerial view
+                animateToAerialView();
+                
+            } else {
+                // Switch to ground view
+                viewMode = 'ground';
+                button.textContent = '🚁 Aerial View';
+                controlsText.textContent = 'WASD: Move | Q/E: Turn | Mouse: Look Around';
+                
+                // Animate back to ground position
+                animateToGroundView();
+            }
+        }
+
+        function animateToAerialView() {
+            const duration = 2000;
+            const startPos = camera.position.clone();
+            const startTime = Date.now();
+            
+            const targetPos = new THREE.Vector3(0, 500, 800);
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                
+                camera.position.lerpVectors(startPos, targetPos, eased);
+                camera.lookAt(0, 0, 0);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            
+            animate();
+        }
+
+        function animateToGroundView() {
+            const duration = 2000;
+            const startPos = camera.position.clone();
+            const startTime = Date.now();
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                
+                camera.position.lerpVectors(startPos, savedGroundPosition, eased);
+                
+                // Restore rotation at the end
+                if (progress >= 1) {
+                    camera.rotation.copy(savedGroundRotation);
+                    movement.yaw = savedGroundRotation.y;
+                    movement.pitch = savedGroundRotation.x;
+                } else {
+                    camera.lookAt(0, 50, 0);
+                }
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            
+            animate();
+        }
+
+        function toggleUI() {
+            uiVisible = !uiVisible;
+            const panels = ['.control-panel', '.power-panel', '.status-panel'];
+            const button = document.getElementById('uiToggle');
+            
+            panels.forEach(selector => {
+                const panel = document.querySelector(selector);
+                if (panel) {
+                    panel.style.display = uiVisible ? 'block' : 'none';
+                }
+            });
+            
+            button.textContent = uiVisible ? '👁️ Hide UI' : '👁️ Show UI';
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock ? clock.getDelta() : 0.016;
+            const elapsed = clock ? clock.elapsedTime : performance.now() * 0.001;
+
+            if (typeof window.updateMovement === 'function') {
+                window.updateMovement(delta);
+            }
+
+            if (!isPaused) {
+                simulationAccumulator += delta;
+                while (simulationAccumulator >= SIMULATION_STEP) {
+                    updateSimulation(SIMULATION_STEP);
+                    simulationAccumulator -= SIMULATION_STEP;
+                }
+            }
+
+            const totalSupply = Object.values(grid.sources).reduce((sum, s) => sum + s.output, 0);
+            const hasPower = totalSupply > grid.demand * 0.5 && !grid.blackoutActive;
+
+            if (!isPaused) {
+                windTurbineBlades.forEach(blades => {
+                    const source = grid.sources.wind;
+                    if (source && source.online && source.output > 0) {
+                        const speed = (source.output / source.capacity) * 3.0;
+                        blades.rotation.z += speed * delta;
+                    }
+                });
+            }
+
+            cars.forEach(car => {
+                const route = car.userData.route;
+                if (hasPower && !isPaused) {
+                    car.userData.progress += delta * route.speed * 0.06;
+                    if (car.userData.progress > 1) {
+                        car.userData.progress = 0;
+                    }
+
+                    const x = route.start.x + (route.end.x - route.start.x) * car.userData.progress;
+                    const z = route.start.z + (route.end.z - route.start.z) * car.userData.progress;
+                    car.position.set(x, 0, z);
+                }
+
+                const headlightsOn = hasPower && environmentMode === 'night';
+                car.userData.headlights.forEach(light => {
+                    light.material.opacity = headlightsOn ? 0.8 : 0;
+                });
+            });
+
+            const dirtyWindowMeshes = new Set();
+            buildingLights.forEach(lightData => {
+                const mesh = lightData.mesh;
+                let intensity = 0;
+
+                if (hasPower) {
+                    if (!isPaused && elapsed >= lightData.nextToggle) {
+                        lightData.active = !lightData.active;
+                        lightData.nextToggle = elapsed + 6 + Math.random() * 10;
+                    }
+
+                    const base = lightData.active ? lightData.base : lightData.base * 0.25;
+                    const flickerStrength = environmentMode === 'night' ? 0.12 : 0.035;
+                    const flicker = Math.sin(elapsed * lightData.flickerSpeed + lightData.flickerPhase) * flickerStrength;
+                    intensity = Math.max(0, base + flicker);
+                    if (environmentMode === 'day') {
+                        intensity *= 0.4;
+                    }
+                } else {
+                    intensity = 0;
+                }
+
+                windowColor.copy(baseWindowColor).multiplyScalar(intensity);
+                mesh.setColorAt(lightData.index, windowColor);
+                dirtyWindowMeshes.add(mesh);
+            });
+
+            dirtyWindowMeshes.forEach(mesh => {
+                if (mesh.instanceColor) {
+                    mesh.instanceColor.needsUpdate = true;
+                }
+            });
+
+            streetLights.forEach(light => {
+                if (!hasPower) {
+                    light.intensity = 0;
+                } else if (environmentMode === 'day') {
+                    light.intensity = 0.05;
+                } else {
+                    const flicker = isPaused ? 0 : Math.sin(elapsed * 2) * 0.05;
+                    light.intensity = 0.55 + flicker;
+                }
+            });
+
+            energyFlows.forEach(flow => {
+                const source = grid.sources[flow.userData.type];
+                const active = source && source.online && source.output > 0;
+
+                flow.material.opacity = active ? 0.6 : 0.1;
+
+                if (active && !isPaused) {
+                    flow.userData.particles.forEach(particle => {
+                        particle.userData.t += delta * 0.6 * (source.output / source.capacity);
+                        if (particle.userData.t > 1) particle.userData.t = 0;
+
+                        const pos = flow.userData.curve.getPointAt(particle.userData.t);
+                        particle.position.copy(pos);
+                        particle.visible = true;
+                    });
+                } else {
+                    flow.userData.particles.forEach(particle => {
+                        particle.visible = active;
+                    });
+                }
+            });
+
+            powerPlants.forEach(plant => {
+                const source = grid.sources[plant.userData.type];
+                if (!source) return;
+
+                const intensity = source.online ? source.output / source.capacity : 0;
+                const selectionScale = plant.userData.type === grid.selectedPlant
+                    ? (isPaused ? 1.2 : 1.2 + Math.sin(elapsed * 0.5) * 0.1)
+                    : 1;
+
+                plant.scale.setScalar(selectionScale);
+                plant.userData.orb.scale.setScalar(1 + intensity * 0.5);
+                plant.userData.light.intensity = intensity * (environmentMode === 'night' ? 3.5 : 1.8);
+                plant.userData.orb.material.opacity = source.online ? 0.8 : 0.2;
+
+                if (!isPaused && plant.userData.type === 'nuclear' && source.online) {
+                    plant.traverse(child => {
+                        if (child.material && child.material.opacity === 0.3) {
+                            child.position.y = 110 + Math.sin(elapsed * 0.8) * 5;
+                        }
+                    });
+                }
+            });
+
+            buildings.forEach(building => {
+                const source = grid.sources[building.userData.powerType];
+                if (source && source.online && source.output > 0) {
+                    building.userData.connector.material.color.setHex(colors[building.userData.powerType]);
+                    building.userData.connector.material.opacity = 0.8;
+                } else {
+                    building.userData.connector.material.opacity = 0.1;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        // Start when Three.js is loaded
+        if (typeof THREE !== 'undefined') {
+            init();
+        } else {
+            document.getElementById('loading').style.display = 'block';
+            window.addEventListener('load', () => {
+                if (typeof THREE !== 'undefined') {
+                    document.getElementById('loading').style.display = 'none';
+                    init();
+                } else {
+                    document.getElementById('loading').textContent = 'Error: Could not load 3D library';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

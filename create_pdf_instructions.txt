@@ -1,0 +1,28 @@
+Instructions to Convert HTML to PDF:
+
+1. Open the HTML file in your web browser:
+   - File location: /Users/mojo-g/Documents/g-data/cewd/summit/gdata_one_pager.html
+   
+2. Use the browser's print function:
+   - Press Cmd+P (Mac) or Ctrl+P (Windows/Linux)
+   - Select "Save as PDF" as the destination
+   - Make sure the following settings are selected:
+     - Paper size: Letter (8.5" x 11")
+     - Margins: Default or Minimum
+     - Background graphics: Checked (to include colors)
+   
+3. Save the file as:
+   - Filename: gdata_one_pager.pdf
+   - Location: /Users/mojo-g/Documents/g-data/cewd/summit/
+
+The HTML file has been optimized for PDF printing with:
+- Print-specific CSS styles
+- Proper page breaks
+- Clean layout for PDF format
+- All content including:
+  - G-Data Labs logo (gdata_day_trans_cropped_transparent.png)
+  - Contact email: morgan.jones@g-datalabs.com
+  - Traction metrics: 200+ students, 10+ sessions, strategic partnerships
+
+Alternative method using command line (if you have Chrome installed):
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --headless --print-to-pdf=/Users/mojo-g/Documents/g-data/cewd/summit/gdata_one_pager.pdf /Users/mojo-g/Documents/g-data/cewd/summit/gdata_one_pager.html

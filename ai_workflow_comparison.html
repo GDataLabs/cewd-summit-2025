@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Workflow Time Savings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e8dcc8 0%, #f5f0e8 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            color: #3d2817;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            color: #6b5344;
+        }
+
+        .scenarios-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 50px;
+        }
+
+        .scenario-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(139, 111, 63, 0.2);
+            border-radius: 16px;
+            padding: 30px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .scenario-card:hover {
+            border-color: rgba(139, 111, 63, 0.4);
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .scenario-card.highlight {
+            border: 3px solid #8B6F3F;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 8px 30px rgba(139, 111, 63, 0.15);
+        }
+
+        .scenario-card.highlight::before {
+            content: 'RECOMMENDED';
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: linear-gradient(135deg, #8B6F3F 0%, #A68B5B 100%);
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.75em;
+            font-weight: 700;
+            letter-spacing: 1px;
+            border-bottom-left-radius: 8px;
+        }
+
+        .scenario-title {
+            font-size: 1.3em;
+            color: #3d2817;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .scenario-badge {
+            display: inline-block;
+            background: rgba(139, 111, 63, 0.15);
+            border: 1px solid #A68B5B;
+            color: #6b5344;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .scenario-badge.manual {
+            background: rgba(156, 99, 235, 0.15);
+            border-color: #a78bfa;
+            color: #6d28d9;
+        }
+
+        .scenario-badge.ai {
+            background: rgba(139, 111, 63, 0.2);
+            border-color: #8B6F3F;
+            color: #3d2817;
+        }
+
+        .scenario-badge.hybrid {
+            background: rgba(245, 158, 11, 0.15);
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+
+        svg {
+            width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        .time-metrics {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(139, 111, 63, 0.08);
+            border-radius: 8px;
+        }
+
+        .metric {
+            flex: 1;
+            text-align: center;
+        }
+
+        .metric-label {
+            color: #8B6F3F;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            color: #3d2817;
+            font-size: 1.8em;
+            font-weight: 700;
+        }
+
+        .metric-unit {
+            color: #8B6F3F;
+            font-size: 0.9em;
+            margin-left: 2px;
+        }
+
+        .savings-section {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, rgba(139, 111, 63, 0.1) 0%, rgba(168, 139, 91, 0.08) 100%);
+            border: 2px solid #A68B5B;
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .savings-section h2 {
+            color: #8B6F3F;
+            font-size: 1.4em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 30px;
+        }
+
+        .savings-amount {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .savings-stat {
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            border: 1px solid rgba(139, 111, 63, 0.15);
+        }
+
+        .savings-stat .value {
+            font-size: 3em;
+            font-weight: 700;
+            color: #8B6F3F;
+            margin-bottom: 8px;
+        }
+
+        .savings-stat .label {
+            color: #6b5344;
+            font-size: 1em;
+            line-height: 1.4;
+        }
+
+        .legend {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(139, 111, 63, 0.2);
+            border-radius: 16px;
+            margin-top: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+        }
+
+        .legend-color {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .legend-text {
+            color: #6b5344;
+            font-size: 0.95em;
+        }
+
+        .legend-text strong {
+            color: #3d2817;
+            display: block;
+            font-size: 0.9em;
+        }
+
+        .insight-box {
+            background: rgba(139, 111, 63, 0.1);
+            border-left: 4px solid #8B6F3F;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            color: #6b5344;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .description {
+            color: #8B6F3F;
+            font-size: 0.95em;
+            line-height: 1.6;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .scenarios-container {
+                grid-template-columns: 1fr;
+            }
+
+            .savings-amount {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>What We Can Spin Up in the Room</h1>
+            <p>AI Workflow Execution Comparison</p>
+        </div>
+
+        <div class="scenarios-container">
+            <!-- Scenario 1: Manual Sequential -->
+            <div class="scenario-card">
+                <span class="scenario-badge manual">👤 Manual</span>
+                <h3 class="scenario-title">Sequential Execution</h3>
+                <div class="description">
+                    Each task must be completed before the next one begins. No parallelization possible.
+                </div>
+
+                <svg viewBox="0 0 350 200" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <linearGradient id="manual1" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="manual2" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#d8b4fe;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#c4b5fd;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="manual3" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#e9d5ff;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#d8b4fe;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="manual4" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#f3e8ff;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#e9d5ff;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <!-- Time scale (23 hours total: 305px / 23h = 13.26px/h) -->
+                    <text x="15" y="18" font-size="10" fill="#8B6F3F" font-weight="600">Timeline</text>
+                    <line x1="15" y1="25" x2="320" y2="25" stroke="#A68B5B" stroke-width="1"/>
+                    <text x="15" y="38" font-size="9" fill="#8B6F3F">0h</text>
+                    <text x="121" y="38" font-size="9" fill="#8B6F3F">8h</text>
+                    <text x="227" y="38" font-size="9" fill="#8B6F3F">16h</text>
+                    <text x="308" y="38" font-size="9" fill="#8B6F3F">23h</text>
+                    
+                    <!-- Sequential task bars (3D:8h, Video:6h, Pod:5h, Avatar:4h = 23h total) -->
+                    <rect x="15" y="55" width="106" height="22" fill="url(#manual1)" rx="3" stroke="#8B6F3F" stroke-width="1"/>
+                    <text x="68" y="68" font-size="9" font-weight="600" fill="#fff" text-anchor="middle">3D Sim</text>
+                    
+                    <rect x="121" y="55" width="80" height="22" fill="url(#manual2)" rx="3" stroke="#8B6F3F" stroke-width="1"/>
+                    <text x="161" y="68" font-size="9" font-weight="600" fill="#333" text-anchor="middle">Video</text>
+                    
+                    <rect x="201" y="55" width="66" height="22" fill="url(#manual3)" rx="3" stroke="#8B6F3F" stroke-width="1"/>
+                    <text x="234" y="68" font-size="9" font-weight="600" fill="#333" text-anchor="middle">Pod</text>
+                    
+                    <rect x="267" y="55" width="53" height="22" fill="url(#manual4)" rx="3" stroke="#8B6F3F" stroke-width="1"/>
+                    <text x="293" y="68" font-size="9" font-weight="600" fill="#333" text-anchor="middle">Avatar</text>
+                    
+                    <!-- Result box -->
+                    <rect x="15" y="95" width="305" height="90" fill="none" stroke="#8B6F3F" stroke-width="2" stroke-dasharray="5,5" rx="4"/>
+                    <text x="170" y="115" font-size="11" font-weight="700" fill="#3d2817" text-anchor="middle">Total Time: 23 hours</text>
+                    <text x="170" y="130" font-size="9" fill="#8B6F3F" text-anchor="middle">Each task waits for previous</text>
+                    <text x="170" y="143" font-size="9" fill="#8B6F3F" text-anchor="middle">completion. Maximum sequential</text>
+                    <text x="170" y="156" font-size="9" fill="#8B6F3F" text-anchor="middle">overhead.</text>
+                </svg>
+
+                <div class="time-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Total Time</div>
+                        <div class="metric-value">23<span class="metric-unit">hrs</span></div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Parallelization</div>
+                        <div class="metric-value">0%<span class="metric-unit"></span></div>
+                    </div>
+                </div>
+
+                <div class="insight-box">
+                    Tasks execute one after another with no overlap. This is the baseline for comparison.
+                </div>
+            </div>
+
+            <!-- Scenario 2: Hybrid -->
+            <div class="scenario-card">
+                <span class="scenario-badge hybrid">👥 Hybrid</span>
+                <h3 class="scenario-title">Partial Parallel</h3>
+                <div class="description">
+                    One human sequentially handles complex tasks while AI agents work in parallel. Human is the bottleneck.
+                </div>
+
+                <svg viewBox="0 0 350 200" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <linearGradient id="hybrid_manual" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="hybrid_ai_light" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#fcd34d;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <!-- Time scale (13 hours total: 305px / 13h) -->
+                    <text x="15" y="16" font-size="10" fill="#8B6F3F" font-weight="600">Timeline: Human setup + AI parallel work</text>
+                    <line x1="15" y1="23" x2="320" y2="23" stroke="#A68B5B" stroke-width="1"/>
+                    <text x="15" y="35" font-size="8" fill="#8B6F3F">0h</text>
+                    <text x="100" y="35" font-size="8" fill="#8B6F3F">4h</text>
+                    <text x="185" y="35" font-size="8" fill="#8B6F3F">8h</text>
+                    <text x="280" y="35" font-size="8" fill="#8B6F3F">12h</text>
+                    
+                    <!-- Human tasks: Sequential with gap at beginning (starts at 0.5h) -->
+                    <rect x="27" y="48" width="188" height="20" fill="url(#hybrid_manual)" rx="3" stroke="#3d2817" stroke-width="1"/>
+                    <text x="121" y="59" font-size="8" font-weight="600" fill="#fff" text-anchor="middle">3D Sim 0.5-8.5h</text>
+                    
+                    <rect x="215" y="48" width="93" height="20" fill="url(#hybrid_manual)" rx="3" stroke="#3d2817" stroke-width="1"/>
+                    <text x="262" y="59" font-size="8" font-weight="600" fill="#fff" text-anchor="middle">Avatar 8.5-12.5h</text>
+                    
+                    <!-- AI tasks: Parallel - lighter orange (start at 0h) - much shorter duration -->
+                    <rect x="15" y="73" width="41" height="20" fill="url(#hybrid_ai_light)" rx="3" stroke="#3d2817" stroke-width="1"/>
+                    <text x="36" y="84" font-size="8" font-weight="600" fill="#333" text-anchor="middle">Video</text>
+                    
+                    <rect x="30" y="97" width="41" height="20" fill="url(#hybrid_ai_light)" rx="3" stroke="#3d2817" stroke-width="1"/>
+                    <text x="51" y="108" font-size="8" font-weight="600" fill="#333" text-anchor="middle">Podcast</text>
+                    
+                    <!-- Result box -->
+                    <rect x="15" y="125" width="305" height="50" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,5" rx="4"/>
+                    <text x="170" y="143" font-size="10" font-weight="700" fill="#3d2817" text-anchor="middle">Total: ~12.5 hours</text>
+                    <text x="170" y="157" font-size="9" fill="#8B6F3F" text-anchor="middle">Gap shows setup time before human starts work</text>
+                </svg>
+
+                <!-- Legend for Hybrid approach -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; padding: 12px; background: rgba(139, 111, 63, 0.08); border-radius: 8px; border: 1px solid rgba(139, 111, 63, 0.15);">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 3px; border: 1px solid #8B6F3F;"></div>
+                        <span style="font-size: 0.9em; color: #6b5344;"><strong style="color: #3d2817;">Manual:</strong> Human-done</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 20px; height: 20px; background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%); border-radius: 3px; border: 1px solid #8B6F3F;"></div>
+                        <span style="font-size: 0.9em; color: #6b5344;"><strong style="color: #3d2817;">AI Light:</strong> AI-executed</span>
+                    </div>
+                </div>
+
+                <div class="time-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Total Time</div>
+                        <div class="metric-value">~12.5<span class="metric-unit">hrs</span></div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Parallelization</div>
+                        <div class="metric-value">~48%<span class="metric-unit"></span></div>
+                    </div>
+                </div>
+
+                <div class="insight-box">
+                    Human work is sequential (one person bottleneck), but AI agents work in parallel. Shows why AI-only approach unlocks true parallelization gains.
+                </div>
+            </div>
+
+            <!-- Scenario 3: Parallel AI (Recommended) -->
+            <div class="scenario-card highlight">
+                <span class="scenario-badge ai">🤖 Parallel AI</span>
+                <h3 class="scenario-title">AI All Stacked</h3>
+                <div class="description">
+                    All four AI agents execute with slight staggering as each spins up. Rapid sequential startup with parallel execution.
+                </div>
+
+                <svg viewBox="0 0 350 210" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                        <linearGradient id="ai_stacked1" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#0891b2;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="ai_stacked2" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#0891b2;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#0e7490;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <!-- Time scale (30 minutes total: 305px / 30min = 10.17px/min) -->
+                    <text x="15" y="16" font-size="10" fill="#3d2817" font-weight="600">Timeline with Agent Spinup</text>
+                    <line x1="15" y1="23" x2="320" y2="23" stroke="#A68B5B" stroke-width="2"/>
+                    <text x="15" y="35" font-size="8" fill="#3d2817">0m</text>
+                    <text x="118" y="35" font-size="8" fill="#3d2817">10m</text>
+                    <text x="218" y="35" font-size="8" fill="#3d2817">20m</text>
+                    <text x="300" y="35" font-size="8" fill="#3d2817">30m</text>
+                    
+                    <!-- All tasks staggered with spinup time - extended to 30 min -->
+                    <!-- 3D Sim: 0-30 min (305px) -->
+                    <rect x="15" y="50" width="305" height="22" fill="url(#ai_stacked1)" rx="3" stroke="#3d2817" stroke-width="1" opacity="0.95"/>
+                    <text x="56" y="65" font-size="8" font-weight="600" fill="#fff" text-anchor="middle">3D Sim</text>
+                    
+                    <!-- Video: 2-30 min (starts at 20.3px, width 294.7px) -->
+                    <rect x="35" y="76" width="285" height="22" fill="url(#ai_stacked2)" rx="3" stroke="#3d2817" stroke-width="1" opacity="0.90"/>
+                    <text x="100" y="91" font-size="8" font-weight="600" fill="#fff" text-anchor="middle">Video</text>
+                    
+                    <!-- Pod: 4-30 min (starts at 40.7px, width 279.3px) -->
+                    <rect x="56" y="102" width="264" height="22" fill="url(#ai_stacked1)" rx="3" stroke="#3d2817" stroke-width="1" opacity="0.85"/>
+                    <text x="130" y="117" font-size="8" font-weight="600" fill="#fff" text-anchor="middle">Podcast</text>
+                    
+                    <!-- Avatar: 6-30 min (starts at 61.0px, width 259px) -->
+                    <rect x="76" y="128" width="244" height="22" fill="url(#ai_stacked2)" rx="3" stroke="#3d2817" stroke-width="1" opacity="0.80"/>
+                    <text x="160" y="143" font-size="8" font-weight="600" fill="#fff" text-anchor="middle">Avatar</text>
+                    
+                    <!-- Result box -->
+                    <rect x="15" y="158" width="305" height="40" fill="none" stroke="#06b6d4" stroke-width="3" rx="4"/>
+                    <text x="170" y="175" font-size="11" font-weight="700" fill="#3d2817" text-anchor="middle">⚡ Complete in 30 minutes with full parallelization</text>
+                </svg>
+
+                <div class="time-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Completion Time</div>
+                        <div class="metric-value">30<span class="metric-unit">min</span></div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Parallelization</div>
+                        <div class="metric-value">100%<span class="metric-unit"></span></div>
+                    </div>
+                </div>
+
+                <div class="insight-box">
+                    ✨ All four AI agents execute with staggered spinup. Complete in just 30 minutes with full parallelization. Tasks are staggered as each agent starts, but all run simultaneously for maximum efficiency.
+                </div>
+            </div>
+
+            <!-- Savings Summary -->
+            <div class="savings-section">
+                <h2>⚡ The Impact</h2>
+                <div class="savings-amount">
+                    <div class="savings-stat">
+                        <div class="value">46x</div>
+                        <div class="label">Faster than Manual<br><span style="font-size: 0.85em; color: #8B6F3F;">23h → 30m</span></div>
+                    </div>
+                    <div class="savings-stat">
+                        <div class="value">22.5 hrs</div>
+                        <div class="label">Saved Per Project<br><span style="font-size: 0.85em; color: #8B6F3F;">Recovered Time</span></div>
+                    </div>
+                    <div class="savings-stat">
+                        <div class="value">98%</div>
+                        <div class="label">Time Reduction<br><span style="font-size: 0.85em; color: #8B6F3F;">vs Sequential</span></div>
+                    </div>
+                    <div class="savings-stat">
+                        <div class="value">30 min</div>
+                        <div class="label">Live Execution<br><span style="font-size: 0.85em; color: #8B6F3F;">In the Room</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
