@@ -266,6 +266,16 @@
             background: linear-gradient(135deg, #ffe066, #f7b733);
         }
 
+        button#fullscreenToggle {
+            right: 20px;
+            bottom: 170px;
+            background: linear-gradient(135deg, #9370DB, #8A2BE2);
+        }
+
+        button#fullscreenToggle:hover {
+            background: linear-gradient(135deg, #9370DB, #8A2BE2);
+        }
+
         .slider {
             width: 100%;
             margin: 10px 0;
@@ -571,6 +581,7 @@
     <button class="view-toggle" id="viewToggle">🚁 Aerial View</button>
     <button class="view-toggle" id="pauseToggle">⏸️ Pause</button>
     <button class="view-toggle" id="dayNightToggle">🌙 Night Mode</button>
+    <button class="view-toggle" id="fullscreenToggle">⛶ Fullscreen</button>
     
     <div class="controls-hint" id="controlsHint">
         <span id="controlsText">WASD: Move | Q/E: Turn | Mouse: Look Around</span>
@@ -1736,6 +1747,23 @@
             document.getElementById('pauseToggle').addEventListener('click', () => {
                 isPaused = !isPaused;
                 document.getElementById('pauseToggle').textContent = isPaused ? '▶️ Resume' : '⏸️ Pause';
+            });
+
+            // Fullscreen toggle
+            document.getElementById('fullscreenToggle').addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().then(() => {
+                        document.getElementById('fullscreenToggle').textContent = '◱ Exit Fullscreen';
+                    }).catch(err => {
+                        console.error('Error attempting to enable fullscreen:', err.message);
+                    });
+                } else {
+                    document.exitFullscreen().then(() => {
+                        document.getElementById('fullscreenToggle').textContent = '⛶ Fullscreen';
+                    }).catch(err => {
+                        console.error('Error attempting to exit fullscreen:', err.message);
+                    });
+                }
             });
 
             // UI toggle button

@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lockout/Tagout Maintenance Bay Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background-color: #e74c3c;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .simulation-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .bay-visual {
+            background: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+            min-height: 400px;
+            margin-bottom: 30px;
+        }
+
+        .equipment {
+            position: absolute;
+            background: #95a5a6;
+            border: 2px solid #7f8c8d;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .equipment:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .equipment.hazard {
+            border-color: #e74c3c;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+
+        .hazard-callout {
+            position: absolute;
+            background: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .walkthrough-panel {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 0 20px;
+        }
+
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ecf0f1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .step.completed {
+            background: #27ae60;
+            color: white;
+        }
+
+        .step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 100%;
+            width: calc((100vw - 400px) / 7);
+            max-width: 100px;
+            height: 2px;
+            background: #ecf0f1;
+            transform: translateY(-50%);
+        }
+
+        .step.completed:not(:last-child)::after {
+            background: #27ae60;
+        }
+
+        .walkthrough-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .walkthrough-controls {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .checklist {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .checklist-item:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .checklist-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+
+        .checklist-item label {
+            flex: 1;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .checklist-item.completed {
+            background: #d5f4e6;
+        }
+
+        .checklist-item.completed label {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #3498db, #2980b9);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .export-section {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .warning-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 20px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .equipment-icon {
+            font-size: 2.5rem;
+            display: block;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .equipment {
+            text-align: center;
+            min-width: 120px;
+        }
+
+        @media (max-width: 768px) {
+            .step:not(:last-child)::after {
+                display: none;
+            }
+            
+            .walkthrough-controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Lockout/Tagout Training Simulation</h1>
+        <p class="subtitle">Maintenance Bay Safety for Apprentices</p>
+    </header>
+
+    <div class="container">
+        <div class="simulation-container">
+            <!-- Maintenance Bay Visual -->
+            <div class="bay-visual" id="bayVisual">
+                <div class="equipment hazard" style="top: 50px; left: 100px;" data-equipment="main-breaker">
+                    <span class="equipment-icon">⚡</span>
+                    <strong>Main Breaker</strong>
+                    <br>480V Panel
+                </div>
+                <div class="hazard-callout" style="top: 30px; left: 100px;">⚡ High Voltage</div>
+
+                <div class="equipment hazard" style="top: 150px; left: 300px;" data-equipment="hydraulic-pump">
+                    <span class="equipment-icon">🔧</span>
+                    <strong>Hydraulic Pump</strong>
+                    <br>3000 PSI
+                </div>
+                <div class="hazard-callout" style="top: 130px; left: 300px;">⚠️ Pressure Hazard</div>
+
+                <div class="equipment" style="top: 50px; right: 150px;" data-equipment="control-panel">
+                    <span class="equipment-icon">🎛️</span>
+                    <strong>Control Panel</strong>
+                    <br>Machine Controls
+                </div>
+
+                <div class="equipment hazard" style="bottom: 100px; left: 200px;" data-equipment="conveyor">
+                    <span class="equipment-icon">⚙️</span>
+                    <strong>Conveyor System</strong>
+                    <br>Moving Parts
+                </div>
+                <div class="hazard-callout" style="bottom: 80px; left: 200px;">⚙️ Pinch Points</div>
+
+                <div class="equipment" style="bottom: 50px; right: 200px;" data-equipment="lockout-station">
+                    <span class="equipment-icon">🔒</span>
+                    <strong>Lockout Station</strong>
+                    <br>Tags & Locks
+                </div>
+            </div>
+
+            <!-- Guided Walkthrough -->
+            <div class="walkthrough-panel">
+                <h2 style="margin-bottom: 20px;">Guided Walkthrough</h2>
+                
+                <div class="step-indicator">
+                    <div class="step active" data-step="1">1</div>
+                    <div class="step" data-step="2">2</div>
+                    <div class="step" data-step="3">3</div>
+                    <div class="step" data-step="4">4</div>
+                    <div class="step" data-step="5">5</div>
+                    <div class="step" data-step="6">6</div>
+                    <div class="step" data-step="7">7</div>
+                </div>
+
+                <div class="walkthrough-content" id="walkthroughContent">
+                    <h3>Step 1: Identify Energy Sources</h3>
+                    <p>Welcome to the maintenance bay! Your first task is to identify all energy sources in the work area. Look for:</p>
+                    <ul style="margin: 15px 0; padding-left: 25px;">
+                        <li>Electrical panels and breakers</li>
+                        <li>Hydraulic/pneumatic systems</li>
+                        <li>Moving machinery</li>
+                        <li>Stored energy (springs, elevated parts)</li>
+                    </ul>
+                    <p><strong>Task:</strong> Click on each piece of equipment in the bay to identify potential hazards.</p>
+                </div>
+
+                <div class="walkthrough-controls">
+                    <button class="btn btn-secondary" id="prevBtn" disabled>Previous</button>
+                    <button class="btn btn-primary" id="nextBtn">Next Step</button>
+                </div>
+            </div>
+
+            <!-- Readiness Checklist -->
+            <div class="checklist">
+                <h2 style="margin-bottom: 20px;">Safety Readiness Checklist</h2>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%">0%</div>
+                </div>
+
+                <div id="checklistItems">
+                    <div class="checklist-item">
+                        <input type="checkbox" id="check1">
+                        <label for="check1">Identified all energy sources in the work area</label>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="check2">
+                        <label for="check2">Notified affected personnel of maintenance work</label>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="check3">
+                        <label for="check3">Shut down equipment using normal procedures</label>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="check4">
+                        <label for="check4">Isolated all energy sources (electrical, mechanical, hydraulic)</label>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="check5">
+                        <label for="check5">Applied lockout devices to energy isolation points</label>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="check6">
+                        <label for="check6">Applied personal locks and filled out tags</label>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="check7">
+                        <label for="check7">Released stored energy (capacitors, springs, hydraulic pressure)</label>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="check8">
+                        <label for="check8">Verified isolation by attempting to start equipment</label>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="check9">
+                        <label for="check9">Used appropriate testing equipment to verify zero energy</label>
+                    </div>
+                    <div class="checklist-item">
+                        <input type="checkbox" id="check10">
+                        <label for="check10">Completed documentation and safety permits</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div class="export-section">
+                <h3 style="margin-bottom: 15px;">Export Your Readiness Report</h3>
+                <p style="margin-bottom: 15px;">Generate a comprehensive safety readiness report for your records.</p>
+                <button class="btn btn-success" id="exportBtn">Export Checklist as HTML</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Equipment Info Modal -->
+    <div id="equipmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Equipment Information</h2>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Walkthrough steps data
+        const walkthroughSteps = [
+            {
+                title: "Step 1: Identify Energy Sources",
+                content: `
+                    <p>Welcome to the maintenance bay! Your first task is to identify all energy sources in the work area. Look for:</p>
+                    <ul style="margin: 15px 0; padding-left: 25px;">
+                        <li>Electrical panels and breakers</li>
+                        <li>Hydraulic/pneumatic systems</li>
+                        <li>Moving machinery</li>
+                        <li>Stored energy (springs, elevated parts)</li>
+                    </ul>
+                    <p><strong>Task:</strong> Click on each piece of equipment in the bay to identify potential hazards.</p>
+                `
+            },
+            {
+                title: "Step 2: Notify Affected Personnel",
+                content: `
+                    <p>Before beginning any lockout/tagout procedure, you must:</p>
+                    <ul style="margin: 15px 0; padding-left: 25px;">
+                        <li>Inform all affected employees about the maintenance</li>
+                        <li>Identify who will be working in the area</li>
+                        <li>Communicate the expected duration of work</li>
+                        <li>Post appropriate warning signs</li>
+                    </ul>
+                    <p><strong>Remember:</strong> Communication prevents accidents. Never assume others know about your work.</p>
+                `
+            },
+            {
+                title: "Step 3: Shutdown Procedures",
+                content: `
+                    <p>Properly shutting down equipment is critical:</p>
+                    <ul style="margin: 15px 0; padding-left: 25px;">
+                        <li>Follow the manufacturer's shutdown sequence</li>
+                        <li>Allow equipment to come to a complete stop</li>
+                        <li>Close all valves in the proper order</li>
+                        <li>Turn off all control switches</li>
+                    </ul>
+                    <p><span class="warning-icon">!</span><strong>Warning:</strong> Never use emergency stops for routine shutdown unless necessary.</p>
+                `
+            },
+            {
+                title: "Step 4: Isolate Energy Sources",
+                content: `
+                    <p>Energy isolation is the core of LOTO safety:</p>
+                    <ul style="margin: 15px 0; padding-left: 25px;">
+                        <li><strong>Electrical:</strong> Open breakers, disconnect switches</li>
+                        <li><strong>Hydraulic:</strong> Close valves, bleed lines</li>
+                        <li><strong>Pneumatic:</strong> Close valves, exhaust air</li>
+                        <li><strong>Mechanical:</strong> Block or secure moving parts</li>
+                    </ul>
+                    <p><strong>Critical:</strong> Each energy source must be physically isolated, not just turned off.</p>
+                `
+            },
+            {
+                title: "Step 5: Apply Lockout Devices",
+                content: `
+                    <p>Proper lockout device application:</p>
+                    <ul style="margin: 15px 0; padding-left: 25px;">
+                        <li>Use only approved lockout devices</li>
+                        <li>Each worker applies their own lock</li>
+                        <li>Fill out tags with: Name, Date, Time, Reason</li>
+                        <li>Never use someone else's lock</li>
+                        <li>Keep the only key to your lock</li>
+                    </ul>
+                    <p><span class="warning-icon">!</span><strong>Rule:</strong> One lock, one key, one person.</p>
+                `
+            },
+            {
+                title: "Step 6: Release Stored Energy",
+                content: `
+                    <p>Even isolated equipment can have dangerous stored energy:</p>
+                    <ul style="margin: 15px 0; padding-left: 25px;">
+                        <li><strong>Capacitors:</strong> Discharge electrical storage</li>
+                        <li><strong>Springs:</strong> Release or block tension</li>
+                        <li><strong>Hydraulics:</strong> Bleed pressure to zero</li>
+                        <li><strong>Gravity:</strong> Block or lower elevated parts</li>
+                        <li><strong>Steam/Air:</strong> Vent to atmosphere</li>
+                    </ul>
+                    <p><strong>Verify:</strong> Always double-check that energy is fully released.</p>
+                `
+            },
+            {
+                title: "Step 7: Verify Isolation",
+                content: `
+                    <p>The final and most critical step - verification:</p>
+                    <ul style="margin: 15px 0; padding-left: 25px;">
+                        <li>Attempt to start the equipment (it should not start)</li>
+                        <li>Use testing equipment (multimeter, pressure gauge)</li>
+                        <li>Check all controls are in neutral/off position</li>
+                        <li>Visually inspect all isolation points</li>
+                        <li>Document all verification steps</li>
+                    </ul>
+                    <p><strong>Golden Rule:</strong> Test before you touch! Always verify zero energy state.</p>
+                `
+            }
+        ];
+
+        // Equipment information
+        const equipmentInfo = {
+            'main-breaker': {
+                title: 'Main Electrical Breaker',
+                hazards: ['480V High Voltage', 'Arc Flash Risk', 'Electrocution Hazard'],
+                lockout: 'Turn off breaker, apply breaker lockout device, verify with multimeter',
+                ppe: ['Insulated gloves', 'Arc flash suit', 'Face shield', 'Safety glasses']
+            },
+            'hydraulic-pump': {
+                title: 'Hydraulic Pump System',
+                hazards: ['3000 PSI Pressure', 'Fluid Injection', 'Crushing Hazard'],
+                lockout: 'Close supply valve, bleed pressure, apply valve lockout, verify with pressure gauge',
+                ppe: ['Safety glasses', 'Face shield', 'Oil-resistant gloves', 'Steel-toed boots']
+            },
+            'control-panel': {
+                title: 'Machine Control Panel',
+                hazards: ['Electrical contacts', 'Unexpected startup', 'Control circuit voltage'],
+                lockout: 'De-energize panel, apply panel lockout, tag all switches',
+                ppe: ['Safety glasses', 'Electrical gloves if live work required']
+            },
+            'conveyor': {
+                title: 'Conveyor System',
+                hazards: ['Moving parts', 'Pinch points', 'Entanglement', 'Stored energy in belt'],
+                lockout: 'Disconnect motor power, lock out control panel, block belt movement',
+                ppe: ['Safety glasses', 'Tight-fitting clothes', 'No jewelry', 'Work gloves']
+            },
+            'lockout-station': {
+                title: 'Lockout/Tagout Station',
+                hazards: ['None - Safety Equipment'],
+                lockout: 'This is where you get your locks, tags, and lockout devices',
+                ppe: ['Always required: Safety glasses and appropriate footwear']
+            }
+        };
+
+        let currentStep = 0;
+        let equipmentClicked = new Set();
+
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Equipment click handlers
+            document.querySelectorAll('.equipment').forEach(eq => {
+                eq.addEventListener('click', function() {
+                    const equipment = this.dataset.equipment;
+                    equipmentClicked.add(equipment);
+                    showEquipmentModal(equipment);
+                    updateHazardCallouts();
+                });
+            });
+
+            // Walkthrough navigation
+            document.getElementById('prevBtn').addEventListener('click', previousStep);
+            document.getElementById('nextBtn').addEventListener('click', nextStep);
+
+            // Checklist handlers
+            document.querySelectorAll('.checklist-item input').forEach(checkbox => {
+                checkbox.addEventListener('change', updateProgress);
+            });
+
+            // Export button
+            document.getElementById('exportBtn').addEventListener('click', exportChecklist);
+
+            // Modal close
+            document.querySelector('.close').addEventListener('click', closeModal);
+            window.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal')) {
+                    closeModal();
+                }
+            });
+
+            // Initial hazard callouts
+            updateHazardCallouts();
+        });
+
+        function showEquipmentModal(equipment) {
+            const info = equipmentInfo[equipment];
+            const modal = document.getElementById('equipmentModal');
+            const title = document.getElementById('modalTitle');
+            const content = document.getElementById('modalContent');
+
+            title.textContent = info.title;
+            content.innerHTML = `
+                <h3>Hazards:</h3>
+                <ul style="margin: 10px 0; padding-left: 25px; color: #e74c3c;">
+                    ${info.hazards.map(h => `<li>${h}</li>`).join('')}
+                </ul>
+                
+                <h3>Lockout Procedure:</h3>
+                <p style="margin: 10px 0;">${info.lockout}</p>
+                
+                <h3>Required PPE:</h3>
+                <ul style="margin: 10px 0; padding-left: 25px; color: #27ae60;">
+                    ${info.ppe.map(p => `<li>${p}</li>`).join('')}
+                </ul>
+            `;
+
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('equipmentModal').style.display = 'none';
+        }
+
+        function updateHazardCallouts() {
+            const callouts = document.querySelectorAll('.hazard-callout');
+            callouts.forEach(callout => {
+                callout.style.display = 'block';
+            });
+        }
+
+        function previousStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateWalkthrough();
+            }
+        }
+
+        function nextStep() {
+            if (currentStep < walkthroughSteps.length - 1) {
+                currentStep++;
+                updateWalkthrough();
+            }
+        }
+
+        function updateWalkthrough() {
+            // Update content
+            const content = document.getElementById('walkthroughContent');
+            const step = walkthroughSteps[currentStep];
+            content.innerHTML = `<h3>${step.title}</h3>${step.content}`;
+
+            // Update step indicators
+            document.querySelectorAll('.step').forEach((stepEl, index) => {
+                stepEl.classList.remove('active');
+                if (index < currentStep) {
+                    stepEl.classList.add('completed');
+                } else if (index === currentStep) {
+                    stepEl.classList.add('active');
+                } else {
+                    stepEl.classList.remove('completed');
+                }
+            });
+
+            // Update navigation buttons
+            document.getElementById('prevBtn').disabled = currentStep === 0;
+            document.getElementById('nextBtn').disabled = currentStep === walkthroughSteps.length - 1;
+        }
+
+        function updateProgress() {
+            const checkboxes = document.querySelectorAll('.checklist-item input');
+            const checked = document.querySelectorAll('.checklist-item input:checked');
+            const progress = (checked.length / checkboxes.length) * 100;
+            
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = progress + '%';
+            progressFill.textContent = Math.round(progress) + '%';
+
+            // Update checklist item appearance
+            checkboxes.forEach(checkbox => {
+                const item = checkbox.parentElement;
+                if (checkbox.checked) {
+                    item.classList.add('completed');
+                } else {
+                    item.classList.remove('completed');
+                }
+            });
+        }
+
+        function exportChecklist() {
+            const checklistItems = document.querySelectorAll('.checklist-item');
+            const completedItems = [];
+            const incompleteItems = [];
+            
+            checklistItems.forEach(item => {
+                const checkbox = item.querySelector('input');
+                const label = item.querySelector('label').textContent;
+                
+                if (checkbox.checked) {
+                    completedItems.push(label);
+                } else {
+                    incompleteItems.push(label);
+                }
+            });
+
+            const timestamp = new Date().toLocaleString();
+            const progress = document.getElementById('progressFill').textContent;
+
+            const exportHTML = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOTO Safety Readiness Report - ${timestamp}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 { color: #e74c3c; border-bottom: 3px solid #e74c3c; padding-bottom: 10px; }
+        h2 { color: #2c3e50; margin-top: 30px; }
+        .header-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        .completed { color: #27ae60; }
+        .incomplete { color: #e74c3c; }
+        ul { padding-left: 25px; }
+        li { margin: 5px 0; }
+        .signature-section {
+            margin-top: 50px;
+            border-top: 1px solid #ddd;
+            padding-top: 30px;
+        }
+        .signature-line {
+            border-bottom: 1px solid #000;
+            width: 300px;
+            margin: 30px 0 5px 0;
+            display: inline-block;
+        }
+        @media print {
+            body { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Lockout/Tagout Safety Readiness Report</h1>
+    
+    <div class="header-info">
+        <p><strong>Generated:</strong> ${timestamp}</p>
+        <p><strong>Training Module:</strong> LOTO Maintenance Bay Simulation</p>
+        <p><strong>Completion Status:</strong> ${progress}</p>
+        <p><strong>Apprentice Name:</strong> _______________________________</p>
+        <p><strong>Supervisor:</strong> _______________________________</p>
+    </div>
+
+    <h2 class="completed">✓ Completed Items (${completedItems.length})</h2>
+    <ul>
+        ${completedItems.map(item => `<li class="completed">✓ ${item}</li>`).join('')}
+    </ul>
+
+    ${incompleteItems.length > 0 ? `
+    <h2 class="incomplete">✗ Incomplete Items (${incompleteItems.length})</h2>
+    <ul>
+        ${incompleteItems.map(item => `<li class="incomplete">✗ ${item}</li>`).join('')}
+    </ul>
+    ` : ''}
+
+    <h2>Safety Verification</h2>
+    <p>By signing below, I confirm that I have:</p>
+    <ul>
+        <li>Completed all required training modules</li>
+        <li>Understood all lockout/tagout procedures</li>
+        <li>Identified all potential hazards in the maintenance bay</li>
+        <li>Demonstrated proper use of lockout devices</li>
+        <li>Committed to following all safety procedures</li>
+    </ul>
+
+    <div class="signature-section">
+        <p><strong>Apprentice Signature:</strong></p>
+        <div class="signature-line"></div>
+        <p>Date: _______________________________</p>
+        
+        <p style="margin-top: 40px;"><strong>Supervisor Signature:</strong></p>
+        <div class="signature-line"></div>
+        <p>Date: _______________________________</p>
+    </div>
+
+    <div style="margin-top: 50px; padding: 20px; background: #fff3cd; border: 1px solid #ffecd1; border-radius: 5px;">
+        <p><strong>Important:</strong> This report is for training purposes only. Always refer to your facility's specific lockout/tagout procedures and policies. When in doubt, ask your supervisor.</p>
+    </div>
+</body>
+</html>
+            `;
+
+            // Create blob and download
+            const blob = new Blob([exportHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `LOTO_Safety_Report_${new Date().toISOString().slice(0, 10)}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('Safety readiness report exported successfully!');
+        }
+    </script>
+</body>
+</html>
